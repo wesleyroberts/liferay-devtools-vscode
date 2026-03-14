@@ -1,0 +1,30 @@
+{
+  "name": "liferay-workspace-mvp",
+  "displayName": "Liferay Workspace MVP",
+  "version": "0.0.1",
+  "description": "Create Liferay Workspace without Blade CLI",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onCommand:liferay.createWorkspace"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "liferay.createWorkspace",
+        "title": "Liferay: Create Workspace"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3"
+  }
+}
