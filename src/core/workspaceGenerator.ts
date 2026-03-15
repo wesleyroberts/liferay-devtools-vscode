@@ -10,7 +10,9 @@ export interface GenerateWorkspaceParams {
   productVersion: string;
 }
 
-export async function generateWorkspace(params: GenerateWorkspaceParams): Promise<void> {
+export async function generateWorkspace(
+  params: GenerateWorkspaceParams
+): Promise<void> {
   const { context, workspaceDir, workspaceName, productVersion } = params;
 
   const templateDir = path.join(
@@ -19,12 +21,21 @@ export async function generateWorkspace(params: GenerateWorkspaceParams): Promis
     "workspace-template"
   );
 
-  try {
-    await fs.access(templateDir);
-  } catch {
-    throw new Error(
-      `Template não encontrado em: ${templateDir}. Crie a pasta resources/workspace-template com os arquivos do Gradle Wrapper.`
-    );
+  const requiredFiles = [
+    path.join(templateDir, "gradlew"),
+    path.join(templateDir, "gradlew.bat"),
+    path.join(templateDir, "gradle", "wrapper", "gradle-wrapper.jar"),
+    path.join(templateDir, "gradle", "wrapper", "gradle-wrapper.properties")
+  ];
+
+  for (const file of requiredFiles) {
+    try {
+      await fs.access(file);
+    } catch {
+      throw new Error(
+        `Arquivo obrigatório do Gradle Wrapper não encontrado: ${file}`
+      );
+    }
   }
 
   await fs.mkdir(workspaceDir, { recursive: true });
@@ -49,7 +60,23 @@ apply plugin: "com.liferay.workspace"
 rootProject.name = "${workspaceName}"
 `;
 
-  const gradleProperties = `liferay.workspace.product=${productVersion}
+ const gradleProperties = `
+liferay.workspace.bundle.dist.include.metadata=true
+liferay.workspace.modules.dir=modules
+liferay.workspace.themes.dir=themes
+liferay.workspace.wars.dir=modules
+microsoft.translator.subscription.key=
+liferay.workspace.product=${productVersion}
+target.platform.index.sources=false
+`;
+
+  const gitignore = `/bundles/
+/.gradle/
+/build/
+/out/
+/target/
+node_modules/
+.DS_Store
 `;
 
   await fs.writeFile(
@@ -63,4 +90,31 @@ rootProject.name = "${workspaceName}"
     gradleProperties,
     "utf8"
   );
+
+  await fs.writeFile(
+    path.join(workspaceDir, ".gitignore"),
+    gitignore,
+    "utf8"
+  );
+
+  await createWorkspaceDirectories(workspaceDir);
+}
+
+async function createWorkspaceDirectories(workspaceDir: string): Promise<void> {
+  const directories = [
+    "modules",
+    "configs",
+    "bundles",
+    "client-extensions",
+    "themes",
+    "wars"
+  ];
+
+  for (const dir of directories) {
+    await fs.mkdir(path.join(workspaceDir, dir), { recursive: true });
+  }
+
+   const configsDir = path.join(workspaceDir, "configs", "local");
+
+  await fs.mkdir(configsDir, { recursive: true });
 }

@@ -1,17 +1,19 @@
-import * as path from 'node:path';
-import * as vscode from 'vscode';
+import * as path from "node:path";
+import * as vscode from "vscode";
 import {
   COMMUNITY_VERSIONS,
   DXP_VERSIONS,
   LiferayEdition
-} from '../core/versions';
-import { generateWorkspace } from '../core/workspaceGenerator';
-import { runGradleTasks } from '../core/gradleRunner';
-import { validateJava } from '../core/javaValidator';
+} from "../core/versions";
+import { generateWorkspace } from "../core/workspaceGenerator";
+import { runGradleCommand } from "../core/gradleRunner";
+import { validateJava } from "../core/javaValidator";
 
-export function registerCreateWorkspaceCommand(context: vscode.ExtensionContext) {
+export function registerCreateWorkspaceCommand(
+  context: vscode.ExtensionContext
+) {
   const disposable = vscode.commands.registerCommand(
-    'liferay.createWorkspace',
+    "liferay.createWorkspace",
     async () => {
       try {
         const edition = await pickEdition();
@@ -25,10 +27,19 @@ export function registerCreateWorkspaceCommand(context: vscode.ExtensionContext)
         }
 
         const workspaceName = await vscode.window.showInputBox({
-          prompt: 'Workspace name',
-          placeHolder: 'ex: acme-liferay-workspace',
-          validateInput: (value) =>
-            value.trim().length > 0 ? undefined : 'Enter a workspace name'
+          prompt: "Nome do workspace",
+          placeHolder: "ex: acme-liferay-workspace",
+          validateInput: (value) => {
+            if (!value.trim()) {
+              return "Informe o nome do workspace";
+            }
+
+            if (/[\\/:\*\?"<>\|]/.test(value)) {
+              return "O nome contém caracteres inválidos para pasta";
+            }
+
+            return undefined;
+          }
         });
 
         if (!workspaceName) {
@@ -39,7 +50,7 @@ export function registerCreateWorkspaceCommand(context: vscode.ExtensionContext)
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
-          openLabel: 'Select target folder'
+          openLabel: "Selecionar pasta destino"
         });
 
         if (!selectedFolder?.length) {
@@ -52,7 +63,7 @@ export function registerCreateWorkspaceCommand(context: vscode.ExtensionContext)
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Creating ${workspaceName}...`,
+            title: `Criando workspace ${workspaceName}...`,
             cancellable: false
           },
           async () => {
@@ -62,30 +73,50 @@ export function registerCreateWorkspaceCommand(context: vscode.ExtensionContext)
               workspaceName,
               productVersion
             });
-            
+
             await validateJava();
-            await runGradleTasks(workspaceDir);
+
+            await runGradleCommand(workspaceDir, ["--version"]);
           }
         );
 
-        const openOption = 'Open workspace';
+        const downloadBundle = await vscode.window.showInformationMessage(
+          "Workspace criado com sucesso. Deseja baixar o bundle do Liferay agora?",
+          "Sim",
+          "Não"
+        );
+
+        if (downloadBundle === "Sim") {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Baixando o bundle do Liferay...",
+              cancellable: false
+            },
+            async () => {
+              await runGradleCommand(workspaceDir, ["initBundle"]);
+            }
+          );
+        }
+
+        const openOption = "Abrir workspace";
         const choice = await vscode.window.showInformationMessage(
-          `Workspace created successfully: ${workspaceDir}`,
+          `Workspace criado com sucesso: ${workspaceDir}`,
           openOption
         );
 
         if (choice === openOption) {
           await vscode.commands.executeCommand(
-            'vscode.openFolder',
+            "vscode.openFolder",
             vscode.Uri.file(workspaceDir),
             true
           );
         }
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : 'Unknown error';
+          error instanceof Error ? error.message : "Erro desconhecido";
 
-        await vscode.window.showErrorMessage(
+        vscode.window.showErrorMessage(
           `Failed to create workspace: ${message}`
         );
       }
@@ -98,11 +129,19 @@ export function registerCreateWorkspaceCommand(context: vscode.ExtensionContext)
 async function pickEdition(): Promise<LiferayEdition | undefined> {
   const choice = await vscode.window.showQuickPick(
     [
-      { label: 'DXP', value: 'dxp' as LiferayEdition },
-      { label: 'Community', value: 'community' as LiferayEdition }
+      {
+        label: "DXP",
+        description: "Liferay DXP 7.4",
+        value: "dxp" as LiferayEdition
+      },
+      {
+        label: "Community",
+        description: "Liferay Portal GA 7.4",
+        value: "community" as LiferayEdition
+      }
     ],
     {
-      placeHolder: 'Choose Liferay edition'
+      placeHolder: "Escolha a edição do Liferay"
     }
   );
 
@@ -112,7 +151,7 @@ async function pickEdition(): Promise<LiferayEdition | undefined> {
 async function pickProductVersion(
   edition: LiferayEdition
 ): Promise<string | undefined> {
-  const options = edition === 'dxp' ? DXP_VERSIONS : COMMUNITY_VERSIONS;
+  const options = edition === "dxp" ? DXP_VERSIONS : COMMUNITY_VERSIONS;
 
   const choice = await vscode.window.showQuickPick(
     options.map((option) => ({
@@ -121,7 +160,7 @@ async function pickProductVersion(
       value: option.value
     })),
     {
-      placeHolder: 'Choose product version'
+      placeHolder: "Escolha a versão do produto"
     }
   );
 

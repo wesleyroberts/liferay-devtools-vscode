@@ -8,7 +8,7 @@ export async function validateJava(): Promise<void> {
     await execFileAsync("java", ["-version"]);
   } catch {
     throw new Error(
-      "Java não encontrado. Instale um JDK 17 e configure JAVA_HOME e o PATH corretamente."
+      "Java não encontrado. Instale JDK 17 e configure JAVA_HOME."
     );
   }
 }

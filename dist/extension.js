@@ -78,12 +78,20 @@ async function generateWorkspace(params) {
     "resources",
     "workspace-template"
   );
-  try {
-    await fs2.access(templateDir);
-  } catch {
-    throw new Error(
-      `Template n\xE3o encontrado em: ${templateDir}. Crie a pasta resources/workspace-template com os arquivos do Gradle Wrapper.`
-    );
+  const requiredFiles = [
+    path2.join(templateDir, "gradlew"),
+    path2.join(templateDir, "gradlew.bat"),
+    path2.join(templateDir, "gradle", "wrapper", "gradle-wrapper.jar"),
+    path2.join(templateDir, "gradle", "wrapper", "gradle-wrapper.properties")
+  ];
+  for (const file of requiredFiles) {
+    try {
+      await fs2.access(file);
+    } catch {
+      throw new Error(
+        `Arquivo obrigat\xF3rio do Gradle Wrapper n\xE3o encontrado: ${file}`
+      );
+    }
   }
   await fs2.mkdir(workspaceDir, { recursive: true });
   await copyDir(templateDir, workspaceDir);
@@ -107,6 +115,14 @@ rootProject.name = "${workspaceName}"
 `;
   const gradleProperties = `liferay.workspace.product=${productVersion}
 `;
+  const gitignore = `/bundles/
+/.gradle/
+/build/
+/out/
+/target/
+node_modules/
+.DS_Store
+`;
   await fs2.writeFile(
     path2.join(workspaceDir, "settings.gradle"),
     settingsGradle,
@@ -117,6 +133,27 @@ rootProject.name = "${workspaceName}"
     gradleProperties,
     "utf8"
   );
+  await fs2.writeFile(
+    path2.join(workspaceDir, ".gitignore"),
+    gitignore,
+    "utf8"
+  );
+  await createWorkspaceDirectories(workspaceDir);
+}
+async function createWorkspaceDirectories(workspaceDir) {
+  const directories = [
+    "modules",
+    "configs",
+    "bundles",
+    "client-extensions",
+    "themes",
+    "wars"
+  ];
+  for (const dir of directories) {
+    await fs2.mkdir(path2.join(workspaceDir, dir), { recursive: true });
+  }
+  const configsDir = path2.join(workspaceDir, "configs", "local");
+  await fs2.mkdir(configsDir, { recursive: true });
 }
 
 // src/core/gradleRunner.ts
@@ -124,50 +161,31 @@ var fs3 = __toESM(require("node:fs/promises"));
 var path3 = __toESM(require("node:path"));
 var import_node_child_process = require("node:child_process");
 var import_node_util = require("node:util");
-var execAsync = (0, import_node_util.promisify)(import_node_child_process.exec);
-async function runGradleTasks(workspaceDir) {
-  try {
-    if (process.platform === "win32") {
-      const { stdout: stdout2, stderr: stderr2 } = await execAsync("gradlew.bat tasks", {
-        cwd: workspaceDir
-      });
-      console.log(stdout2);
-      console.error(stderr2);
-      return;
-    }
-    const gradlewPath = path3.join(workspaceDir, "gradlew");
-    await fs3.chmod(gradlewPath, 493);
-    const { stdout, stderr } = await execAsync(`"${gradlewPath}" tasks`, {
+var execFileAsync = (0, import_node_util.promisify)(import_node_child_process.execFile);
+async function runGradleCommand(workspaceDir, args) {
+  if (process.platform === "win32") {
+    await execFileAsync("cmd.exe", ["/c", "gradlew.bat", ...args], {
       cwd: workspaceDir
     });
-    console.log(stdout);
-    console.error(stderr);
-  } catch (error) {
-    const stdout = error?.stdout ?? "";
-    const stderr = error?.stderr ?? "";
-    const message = error?.message ?? "Erro ao executar Gradle";
-    throw new Error(
-      `${message}
-
-STDOUT:
-${stdout}
-
-STDERR:
-${stderr}`
-    );
+    return;
   }
+  const gradlewPath = path3.join(workspaceDir, "gradlew");
+  await fs3.chmod(gradlewPath, 493);
+  await execFileAsync(gradlewPath, args, {
+    cwd: workspaceDir
+  });
 }
 
 // src/core/javaValidator.ts
 var import_node_child_process2 = require("node:child_process");
 var import_node_util2 = require("node:util");
-var execFileAsync = (0, import_node_util2.promisify)(import_node_child_process2.execFile);
+var execFileAsync2 = (0, import_node_util2.promisify)(import_node_child_process2.execFile);
 async function validateJava() {
   try {
-    await execFileAsync("java", ["-version"]);
+    await execFileAsync2("java", ["-version"]);
   } catch {
     throw new Error(
-      "Java n\xE3o encontrado. Instale um JDK 17 e configure JAVA_HOME e o PATH corretamente."
+      "Java n\xE3o encontrado. Instale JDK 17 e configure JAVA_HOME."
     );
   }
 }
@@ -187,9 +205,17 @@ function registerCreateWorkspaceCommand(context) {
           return;
         }
         const workspaceName = await vscode.window.showInputBox({
-          prompt: "Workspace name",
+          prompt: "Nome do workspace",
           placeHolder: "ex: acme-liferay-workspace",
-          validateInput: (value) => value.trim().length > 0 ? void 0 : "Enter a workspace name"
+          validateInput: (value) => {
+            if (!value.trim()) {
+              return "Informe o nome do workspace";
+            }
+            if (/[\\/:\*\?"<>\|]/.test(value)) {
+              return "O nome cont\xE9m caracteres inv\xE1lidos para pasta";
+            }
+            return void 0;
+          }
         });
         if (!workspaceName) {
           return;
@@ -198,7 +224,7 @@ function registerCreateWorkspaceCommand(context) {
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
-          openLabel: "Select target folder"
+          openLabel: "Selecionar pasta destino"
         });
         if (!selectedFolder?.length) {
           return;
@@ -208,7 +234,7 @@ function registerCreateWorkspaceCommand(context) {
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Creating ${workspaceName}...`,
+            title: `Criando workspace ${workspaceName}...`,
             cancellable: false
           },
           async () => {
@@ -219,12 +245,29 @@ function registerCreateWorkspaceCommand(context) {
               productVersion
             });
             await validateJava();
-            await runGradleTasks(workspaceDir);
+            await runGradleCommand(workspaceDir, ["--version"]);
           }
         );
-        const openOption = "Open workspace";
+        const downloadBundle = await vscode.window.showInformationMessage(
+          "Workspace criado com sucesso. Deseja baixar o bundle do Liferay agora?",
+          "Sim",
+          "N\xE3o"
+        );
+        if (downloadBundle === "Sim") {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Baixando o bundle do Liferay...",
+              cancellable: false
+            },
+            async () => {
+              await runGradleCommand(workspaceDir, ["initBundle"]);
+            }
+          );
+        }
+        const openOption = "Abrir workspace";
         const choice = await vscode.window.showInformationMessage(
-          `Workspace created successfully: ${workspaceDir}`,
+          `Workspace criado com sucesso: ${workspaceDir}`,
           openOption
         );
         if (choice === openOption) {
@@ -235,8 +278,8 @@ function registerCreateWorkspaceCommand(context) {
           );
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        await vscode.window.showErrorMessage(
+        const message = error instanceof Error ? error.message : "Erro desconhecido";
+        vscode.window.showErrorMessage(
           `Failed to create workspace: ${message}`
         );
       }
@@ -247,11 +290,19 @@ function registerCreateWorkspaceCommand(context) {
 async function pickEdition() {
   const choice = await vscode.window.showQuickPick(
     [
-      { label: "DXP", value: "dxp" },
-      { label: "Community", value: "community" }
+      {
+        label: "DXP",
+        description: "Liferay DXP 7.4",
+        value: "dxp"
+      },
+      {
+        label: "Community",
+        description: "Liferay Portal GA 7.4",
+        value: "community"
+      }
     ],
     {
-      placeHolder: "Choose Liferay edition"
+      placeHolder: "Escolha a edi\xE7\xE3o do Liferay"
     }
   );
   return choice?.value;
@@ -265,7 +316,7 @@ async function pickProductVersion(edition) {
       value: option.value
     })),
     {
-      placeHolder: "Choose product version"
+      placeHolder: "Escolha a vers\xE3o do produto"
     }
   );
   return choice?.value;
