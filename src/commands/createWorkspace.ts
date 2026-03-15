@@ -82,27 +82,7 @@ export function registerCreateWorkspaceCommand(
 
           }
         );
-
-        const downloadBundle = await vscode.window.showInformationMessage(
-          "Workspace criado com sucesso. Deseja baixar o bundle do Liferay agora?",
-          "Sim",
-          "Não"
-        );
-
-        if (downloadBundle === "Sim") {
-          await vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: "Baixando o bundle do Liferay...",
-              cancellable: false
-            },
-            async () => {
-              await runGradleCommand(workspaceDir, ["initBundle"]);
-            }
-            
-          );
-        }
-
+        
         const openOption = "Abrir workspace";
         const choice = await vscode.window.showInformationMessage(
           `Workspace criado com sucesso: ${workspaceDir}`,

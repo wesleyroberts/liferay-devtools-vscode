@@ -37,7 +37,7 @@ module.exports = __toCommonJS(extension_exports);
 
 // src/commands/createWorkspace.ts
 var path4 = __toESM(require("node:path"));
-var vscode = __toESM(require("vscode"));
+var vscode2 = __toESM(require("vscode"));
 
 // src/core/versions.ts
 var COMMUNITY_VERSIONS = [
@@ -167,29 +167,101 @@ async function createWorkspaceDirectories(workspaceDir) {
 var fs3 = __toESM(require("node:fs/promises"));
 var path3 = __toESM(require("node:path"));
 var import_node_child_process = require("node:child_process");
-var import_node_util = require("node:util");
-var execFileAsync = (0, import_node_util.promisify)(import_node_child_process.execFile);
-async function runGradleCommand(workspaceDir, args) {
-  if (process.platform === "win32") {
-    await execFileAsync("cmd.exe", ["/c", "gradlew.bat", ...args], {
-      cwd: workspaceDir
+
+// src/core/output.ts
+var vscode = __toESM(require("vscode"));
+var liferayOutput = vscode.window.createOutputChannel(
+  "Liferay Workspace"
+);
+function log(message) {
+  liferayOutput.appendLine(message);
+}
+
+// src/core/gradleRunner.ts
+async function runGradleCommand(workspaceDir, args, options = {}) {
+  const { command, commandArgs } = await resolveGradleCommand(
+    workspaceDir,
+    args
+  );
+  await new Promise((resolve, reject) => {
+    const child = (0, import_node_child_process.spawn)(command, commandArgs, {
+      cwd: workspaceDir,
+      stdio: ["ignore", "pipe", "pipe"]
     });
-    return;
+    let stdoutBuffer = "";
+    let stderrBuffer = "";
+    let stderrOutput = "";
+    child.stdout.on("data", (chunk) => {
+      stdoutBuffer += chunk.toString();
+      stdoutBuffer = flushLines(stdoutBuffer, (line) => {
+        log(line);
+        options.onLine?.(line);
+      });
+    });
+    child.stderr.on("data", (chunk) => {
+      const text = chunk.toString();
+      stderrBuffer += text;
+      stderrOutput += text;
+      stderrBuffer = flushLines(stderrBuffer, (line) => {
+        log(line);
+        options.onLine?.(line);
+      });
+    });
+    child.on("error", (error) => {
+      reject(error);
+    });
+    child.on("close", (code) => {
+      if (stdoutBuffer.trim()) {
+        log(stdoutBuffer.trim());
+        options.onLine?.(stdoutBuffer.trim());
+      }
+      if (stderrBuffer.trim()) {
+        log(stderrBuffer.trim());
+        options.onLine?.(stderrBuffer.trim());
+      }
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      const message = stderrOutput.trim() || `Gradle finalizou com c\xF3digo ${code}`;
+      reject(new Error(message));
+    });
+  });
+}
+async function resolveGradleCommand(workspaceDir, args) {
+  if (process.platform === "win32") {
+    return {
+      command: "cmd.exe",
+      commandArgs: ["/c", "gradlew.bat", ...args]
+    };
   }
   const gradlewPath = path3.join(workspaceDir, "gradlew");
   await fs3.chmod(gradlewPath, 493);
-  await execFileAsync(gradlewPath, args, {
-    cwd: workspaceDir
-  });
+  return {
+    command: gradlewPath,
+    commandArgs: args
+  };
+}
+function flushLines(buffer, onLine) {
+  const lines = buffer.split(/\r?\n/);
+  const remaining = lines.pop() ?? "";
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      continue;
+    }
+    onLine(trimmedLine);
+  }
+  return remaining;
 }
 
 // src/core/javaValidator.ts
 var import_node_child_process2 = require("node:child_process");
-var import_node_util2 = require("node:util");
-var execFileAsync2 = (0, import_node_util2.promisify)(import_node_child_process2.execFile);
+var import_node_util = require("node:util");
+var execFileAsync = (0, import_node_util.promisify)(import_node_child_process2.execFile);
 async function validateJava() {
   try {
-    await execFileAsync2("java", ["-version"]);
+    await execFileAsync("java", ["-version"]);
   } catch {
     throw new Error(
       "Java n\xE3o encontrado. Instale JDK 17 e configure JAVA_HOME."
@@ -199,7 +271,7 @@ async function validateJava() {
 
 // src/commands/createWorkspace.ts
 function registerCreateWorkspaceCommand(context) {
-  const disposable = vscode.commands.registerCommand(
+  const disposable = vscode2.commands.registerCommand(
     "liferay.createWorkspace",
     async () => {
       try {
@@ -211,7 +283,7 @@ function registerCreateWorkspaceCommand(context) {
         if (!productVersion) {
           return;
         }
-        const workspaceName = await vscode.window.showInputBox({
+        const workspaceName = await vscode2.window.showInputBox({
           prompt: "Nome do workspace",
           placeHolder: "ex: acme-liferay-workspace",
           validateInput: (value) => {
@@ -227,7 +299,7 @@ function registerCreateWorkspaceCommand(context) {
         if (!workspaceName) {
           return;
         }
-        const selectedFolder = await vscode.window.showOpenDialog({
+        const selectedFolder = await vscode2.window.showOpenDialog({
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
@@ -238,9 +310,9 @@ function registerCreateWorkspaceCommand(context) {
         }
         const baseDir = selectedFolder[0].fsPath;
         const workspaceDir = path4.join(baseDir, workspaceName);
-        await vscode.window.withProgress(
+        await vscode2.window.withProgress(
           {
-            location: vscode.ProgressLocation.Notification,
+            location: vscode2.ProgressLocation.Notification,
             title: `Criando workspace ${workspaceName}...`,
             cancellable: false
           },
@@ -256,25 +328,8 @@ function registerCreateWorkspaceCommand(context) {
             await openWorkspace(workspaceDir);
           }
         );
-        const downloadBundle = await vscode.window.showInformationMessage(
-          "Workspace criado com sucesso. Deseja baixar o bundle do Liferay agora?",
-          "Sim",
-          "N\xE3o"
-        );
-        if (downloadBundle === "Sim") {
-          await vscode.window.withProgress(
-            {
-              location: vscode.ProgressLocation.Notification,
-              title: "Baixando o bundle do Liferay...",
-              cancellable: false
-            },
-            async () => {
-              await runGradleCommand(workspaceDir, ["initBundle"]);
-            }
-          );
-        }
         const openOption = "Abrir workspace";
-        const choice = await vscode.window.showInformationMessage(
+        const choice = await vscode2.window.showInformationMessage(
           `Workspace criado com sucesso: ${workspaceDir}`,
           openOption
         );
@@ -283,7 +338,7 @@ function registerCreateWorkspaceCommand(context) {
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro desconhecido";
-        vscode.window.showErrorMessage(
+        vscode2.window.showErrorMessage(
           `Failed to create workspace: ${message}`
         );
       }
@@ -292,7 +347,7 @@ function registerCreateWorkspaceCommand(context) {
   context.subscriptions.push(disposable);
 }
 async function pickEdition() {
-  const choice = await vscode.window.showQuickPick(
+  const choice = await vscode2.window.showQuickPick(
     [
       {
         label: "DXP",
@@ -313,7 +368,7 @@ async function pickEdition() {
 }
 async function pickProductVersion(edition) {
   const options = edition === "dxp" ? DXP_VERSIONS : COMMUNITY_VERSIONS;
-  const choice = await vscode.window.showQuickPick(
+  const choice = await vscode2.window.showQuickPick(
     options.map((option) => ({
       label: option.label,
       description: option.value,
@@ -326,17 +381,104 @@ async function pickProductVersion(edition) {
   return choice?.value;
 }
 async function openWorkspace(workspaceDir) {
-  const workspaceUri = vscode.Uri.file(workspaceDir);
-  await vscode.commands.executeCommand(
+  const workspaceUri = vscode2.Uri.file(workspaceDir);
+  await vscode2.commands.executeCommand(
     "vscode.openFolder",
     workspaceUri,
     true
   );
 }
 
+// src/commands/downloadBundle.ts
+var vscode3 = __toESM(require("vscode"));
+function registerDownloadBundleCommand(context) {
+  const disposable = vscode3.commands.registerCommand(
+    "liferay.downloadBundle",
+    async () => {
+      try {
+        const workspaceFolder = vscode3.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+          vscode3.window.showErrorMessage(
+            "Abra um Liferay Workspace antes de baixar o bundle."
+          );
+          return;
+        }
+        const workspaceDir = workspaceFolder.uri.fsPath;
+        let progressValue = 0;
+        liferayOutput.show(true);
+        await vscode3.window.withProgress(
+          {
+            location: vscode3.ProgressLocation.Notification,
+            title: "Baixando bundle do Liferay...",
+            cancellable: false
+          },
+          async (progress) => {
+            progress.report({
+              increment: 5,
+              message: "Validando Java..."
+            });
+            await validateJava();
+            progressValue = 10;
+            progress.report({
+              increment: 5,
+              message: "Iniciando Gradle..."
+            });
+            await runGradleCommand(workspaceDir, ["initBundle"], {
+              onLine: (line) => {
+                const nextMessage = mapGradleLineToMessage(line);
+                const nextIncrement = progressValue < 90 ? 2 : 0;
+                if (nextIncrement > 0) {
+                  progressValue += nextIncrement;
+                }
+                progress.report({
+                  increment: nextIncrement,
+                  message: nextMessage
+                });
+              }
+            });
+            if (progressValue < 100) {
+              progress.report({
+                increment: 100 - progressValue,
+                message: "Bundle finalizado."
+              });
+            }
+          }
+        );
+        vscode3.window.showInformationMessage("Bundle baixado com sucesso.");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Erro desconhecido";
+        vscode3.window.showErrorMessage(
+          `Falha ao baixar o bundle: ${message}`
+        );
+      }
+    }
+  );
+  context.subscriptions.push(disposable);
+}
+function mapGradleLineToMessage(line) {
+  const normalized = line.toLowerCase();
+  if (normalized.includes("downloading")) {
+    return line;
+  }
+  if (normalized.includes("download")) {
+    return line;
+  }
+  if (normalized.includes("extract")) {
+    return "Extraindo bundle...";
+  }
+  if (normalized.includes("initbundle")) {
+    return "Executando initBundle...";
+  }
+  if (normalized.includes("building")) {
+    return "Processando tarefa Gradle...";
+  }
+  return line.length > 80 ? `${line.slice(0, 77)}...` : line;
+}
+
 // src/extension.ts
 function activate(context) {
   registerCreateWorkspaceCommand(context);
+  registerDownloadBundleCommand(context);
 }
 function deactivate() {
 }

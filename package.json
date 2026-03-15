@@ -7,13 +7,20 @@
     "vscode": "^1.90.0"
   },
   "categories": ["Other"],
-  "activationEvents": ["onCommand:liferay.createWorkspace"],
+  "activationEvents": [
+    "onCommand:liferay.createWorkspace",
+    "onCommand:liferay.downloadBundle"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "liferay.createWorkspace",
         "title": "Liferay: Create Workspace"
+      },
+      {
+        "command": "liferay.downloadBundle",
+        "title": "Liferay: Download Bundle"
       }
     ]
   },
