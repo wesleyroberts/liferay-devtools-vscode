@@ -113,7 +113,14 @@ apply plugin: "com.liferay.workspace"
 
 rootProject.name = "${workspaceName}"
 `;
-  const gradleProperties = `liferay.workspace.product=${productVersion}
+  const gradleProperties = `
+liferay.workspace.bundle.dist.include.metadata=true
+liferay.workspace.modules.dir=modules
+liferay.workspace.themes.dir=themes
+liferay.workspace.wars.dir=modules
+microsoft.translator.subscription.key=
+liferay.workspace.product=${productVersion}
+target.platform.index.sources=false
 `;
   const gitignore = `/bundles/
 /.gradle/
@@ -246,6 +253,7 @@ function registerCreateWorkspaceCommand(context) {
             });
             await validateJava();
             await runGradleCommand(workspaceDir, ["--version"]);
+            await openWorkspace(workspaceDir);
           }
         );
         const downloadBundle = await vscode.window.showInformationMessage(
@@ -271,11 +279,7 @@ function registerCreateWorkspaceCommand(context) {
           openOption
         );
         if (choice === openOption) {
-          await vscode.commands.executeCommand(
-            "vscode.openFolder",
-            vscode.Uri.file(workspaceDir),
-            true
-          );
+          await openWorkspace(workspaceDir);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro desconhecido";
@@ -320,6 +324,14 @@ async function pickProductVersion(edition) {
     }
   );
   return choice?.value;
+}
+async function openWorkspace(workspaceDir) {
+  const workspaceUri = vscode.Uri.file(workspaceDir);
+  await vscode.commands.executeCommand(
+    "vscode.openFolder",
+    workspaceUri,
+    true
+  );
 }
 
 // src/extension.ts

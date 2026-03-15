@@ -77,6 +77,9 @@ export function registerCreateWorkspaceCommand(
             await validateJava();
 
             await runGradleCommand(workspaceDir, ["--version"]);
+
+            await openWorkspace(workspaceDir);
+
           }
         );
 
@@ -96,6 +99,7 @@ export function registerCreateWorkspaceCommand(
             async () => {
               await runGradleCommand(workspaceDir, ["initBundle"]);
             }
+            
           );
         }
 
@@ -106,11 +110,7 @@ export function registerCreateWorkspaceCommand(
         );
 
         if (choice === openOption) {
-          await vscode.commands.executeCommand(
-            "vscode.openFolder",
-            vscode.Uri.file(workspaceDir),
-            true
-          );
+          await openWorkspace(workspaceDir);
         }
       } catch (error) {
         const message =
@@ -165,4 +165,16 @@ async function pickProductVersion(
   );
 
   return choice?.value;
+}
+
+async function openWorkspace(workspaceDir: string) {
+
+  const workspaceUri = vscode.Uri.file(workspaceDir);
+
+  await vscode.commands.executeCommand(
+    "vscode.openFolder",
+    workspaceUri,
+    true
+  );
+
 }
