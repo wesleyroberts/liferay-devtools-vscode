@@ -151,10 +151,8 @@ async function createWorkspaceDirectories(workspaceDir) {
   const directories = [
     "modules",
     "configs",
-    "bundles",
     "client-extensions",
-    "themes",
-    "wars"
+    "themes"
   ];
   for (const dir of directories) {
     await fs2.mkdir(path2.join(workspaceDir, dir), { recursive: true });
@@ -250,9 +248,34 @@ function flushLines(buffer, onLine) {
     if (!trimmedLine) {
       continue;
     }
+    if (shouldIgnoreGradleLine(trimmedLine)) {
+      continue;
+    }
     onLine(trimmedLine);
   }
   return remaining;
+}
+function shouldIgnoreGradleLine(line) {
+  const normalized = line.toLowerCase();
+  if (/^[a-z]:\\.*>/.test(normalized)) {
+    return true;
+  }
+  if (normalized.startsWith("if ")) {
+    return true;
+  }
+  if (normalized.startsWith("set ")) {
+    return true;
+  }
+  if (normalized.startsWith("for %")) {
+    return true;
+  }
+  if (normalized.includes(" endlocal")) {
+    return true;
+  }
+  if (normalized.includes(" setlocal")) {
+    return true;
+  }
+  return false;
 }
 
 // src/core/javaValidator.ts
@@ -457,6 +480,27 @@ function registerDownloadBundleCommand(context) {
 }
 function mapGradleLineToMessage(line) {
   const normalized = line.toLowerCase();
+  if (normalized.includes(":verifyproduct")) {
+    return "Verificando produto...";
+  }
+  if (normalized.includes(":downloadbundle skipped")) {
+    return "Download do bundle foi ignorado.";
+  }
+  if (normalized.includes(":downloadbundle")) {
+    return "Baixando bundle...";
+  }
+  if (normalized.includes(":verifybundle")) {
+    return "Verificando bundle...";
+  }
+  if (normalized.includes(":initbundle")) {
+    return "Inicializando bundle...";
+  }
+  if (normalized.includes("build successful")) {
+    return "Build concluido com sucesso.";
+  }
+  if (normalized.includes("build failed")) {
+    return "Build falhou.";
+  }
   if (normalized.includes("downloading")) {
     return line;
   }
@@ -465,9 +509,6 @@ function mapGradleLineToMessage(line) {
   }
   if (normalized.includes("extract")) {
     return "Extraindo bundle...";
-  }
-  if (normalized.includes("initbundle")) {
-    return "Executando initBundle...";
   }
   if (normalized.includes("building")) {
     return "Processando tarefa Gradle...";

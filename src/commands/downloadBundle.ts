@@ -87,6 +87,34 @@ export function registerDownloadBundleCommand(
 function mapGradleLineToMessage(line: string): string {
   const normalized = line.toLowerCase();
 
+  if (normalized.includes(":verifyproduct")) {
+    return "Verificando produto...";
+  }
+
+  if (normalized.includes(":downloadbundle skipped")) {
+    return "Download do bundle foi ignorado.";
+  }
+
+  if (normalized.includes(":downloadbundle")) {
+    return "Baixando bundle...";
+  }
+
+  if (normalized.includes(":verifybundle")) {
+    return "Verificando bundle...";
+  }
+
+  if (normalized.includes(":initbundle")) {
+    return "Inicializando bundle...";
+  }
+
+  if (normalized.includes("build successful")) {
+    return "Build concluido com sucesso.";
+  }
+
+  if (normalized.includes("build failed")) {
+    return "Build falhou.";
+  }
+
   if (normalized.includes("downloading")) {
     return line;
   }
@@ -97,10 +125,6 @@ function mapGradleLineToMessage(line: string): string {
 
   if (normalized.includes("extract")) {
     return "Extraindo bundle...";
-  }
-
-  if (normalized.includes("initbundle")) {
-    return "Executando initBundle...";
   }
 
   if (normalized.includes("building")) {

@@ -106,8 +106,42 @@ function flushLines(
       continue;
     }
 
+    if (shouldIgnoreGradleLine(trimmedLine)) {
+      continue;
+    }
+
     onLine(trimmedLine);
   }
 
   return remaining;
+}
+
+function shouldIgnoreGradleLine(line: string): boolean {
+  const normalized = line.toLowerCase();
+
+  if (/^[a-z]:\\.*>/.test(normalized)) {
+    return true;
+  }
+
+  if (normalized.startsWith("if ")) {
+    return true;
+  }
+
+  if (normalized.startsWith("set ")) {
+    return true;
+  }
+
+  if (normalized.startsWith("for %")) {
+    return true;
+  }
+
+  if (normalized.includes(" endlocal")) {
+    return true;
+  }
+
+  if (normalized.includes(" setlocal")) {
+    return true;
+  }
+
+  return false;
 }

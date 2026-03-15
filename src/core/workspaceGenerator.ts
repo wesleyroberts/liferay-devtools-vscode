@@ -104,10 +104,8 @@ async function createWorkspaceDirectories(workspaceDir: string): Promise<void> {
   const directories = [
     "modules",
     "configs",
-    "bundles",
     "client-extensions",
     "themes",
-    "wars"
   ];
 
   for (const dir of directories) {
