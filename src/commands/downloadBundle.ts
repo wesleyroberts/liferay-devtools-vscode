@@ -69,7 +69,11 @@ export function registerDownloadBundleCommand(
           }
         );
 
-        vscode.window.showInformationMessage("Bundle baixado com sucesso.");
+        await vscode.commands.executeCommand("liferay.managePortal");
+
+        vscode.window.showInformationMessage(
+          "Bundle baixado com sucesso. O painel de controle do portal foi aberto."
+        );
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Erro desconhecido";

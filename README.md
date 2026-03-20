@@ -16,6 +16,7 @@ Com esta extensao, voce pode:
 - validar o Java antes da execucao
 - executar `initBundle` sem Blade CLI
 - abrir o workspace automaticamente no VS Code
+- iniciar e parar o portal a partir de um painel visual
 
 ## Destaques
 
@@ -59,6 +60,18 @@ Esse comando:
 - roda o Gradle em tempo real
 - mostra progresso visual durante a execucao
 - envia logs para o canal `Liferay Workspace`
+- abre automaticamente o painel de controle do portal ao finalizar
+
+### `Liferay: Manage Portal`
+
+Abre um painel visual para controlar o portal do bundle baixado.
+
+Esse painel:
+
+- detecta o bundle em `bundles/`
+- oferece acoes de `Start Portal` e `Stop Portal`
+- mostra logs em tempo real
+- exibe status, `PID` e ultimo erro conhecido
 
 ## Estrutura Gerada
 
@@ -145,6 +158,7 @@ Proximas funcionalidades planejadas:
 - `Liferay: Create Client Extension`
 - `Liferay: Deploy Module`
 - `Liferay: Start Portal`
+- melhorias no painel de runtime do portal
 - melhorias no progresso do download
 - deteccao mais inteligente de caches e bundles locais
 

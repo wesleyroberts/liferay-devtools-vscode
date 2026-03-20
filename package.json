@@ -9,7 +9,10 @@
   "categories": ["Other"],
   "activationEvents": [
     "onCommand:liferay.createWorkspace",
-    "onCommand:liferay.downloadBundle"
+    "onCommand:liferay.downloadBundle",
+    "onCommand:liferay.managePortal",
+    "onCommand:liferay.startPortal",
+    "onCommand:liferay.stopPortal"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -21,6 +24,18 @@
       {
         "command": "liferay.downloadBundle",
         "title": "Liferay: Download Bundle"
+      },
+      {
+        "command": "liferay.managePortal",
+        "title": "Liferay: Manage Portal"
+      },
+      {
+        "command": "liferay.startPortal",
+        "title": "Liferay: Start Portal"
+      },
+      {
+        "command": "liferay.stopPortal",
+        "title": "Liferay: Stop Portal"
       }
     ]
   },
