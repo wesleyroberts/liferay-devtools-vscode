@@ -1,0 +1,30 @@
+.__PROJECT_NAME__-host,
+:host {
+  display: block;
+}
+
+.app-shell {
+  border: 1px solid #d9dde3;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+.app-shell h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.app-shell p {
+  margin: 0 0 12px;
+}
+
+.app-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #0b5fff;
+  color: #ffffff;
+  cursor: pointer;
+}

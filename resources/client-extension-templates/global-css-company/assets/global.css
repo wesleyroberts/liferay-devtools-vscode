@@ -1,0 +1,7 @@
+body {
+  --__PROJECT_NAME__-color: #0b5fff;
+}
+
+.control-menu {
+  border-bottom: 2px solid var(--__PROJECT_NAME__-color);
+}

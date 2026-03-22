@@ -1,0 +1,11 @@
+assemble:
+  - from: dist
+    into: dist
+
+__PROJECT_ID__-oauth-application-user-agent:
+  .serviceAddress: localhost:3000
+  .serviceScheme: http
+  name: __PROJECT_TITLE__ OAuth Application User Agent
+  scopes:
+    - Liferay.Headless.Admin.Workflow.everything
+  type: oAuthApplicationUserAgent

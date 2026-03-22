@@ -1,0 +1,12 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "./",
+    "experimentalDecorators": true,
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "target": "es2022",
+    "useDefineForClassFields": false
+  }
+}

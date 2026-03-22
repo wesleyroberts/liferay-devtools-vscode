@@ -1,0 +1,10 @@
+assemble:
+  - from: assets
+    into: static
+
+__PROJECT_ID__:
+  name: __PROJECT_TITLE__
+  scope: company
+  scriptLocation: head
+  type: globalJS
+  url: global.js

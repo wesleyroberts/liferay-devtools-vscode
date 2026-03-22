@@ -1,0 +1,13 @@
+{
+  "name": "__PROJECT_NAME__",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node src/server.js",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

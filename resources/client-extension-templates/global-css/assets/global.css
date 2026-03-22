@@ -1,0 +1,7 @@
+body {
+  --__PROJECT_NAME__-accent: #0b5fff;
+}
+
+.portlet {
+  scroll-margin-top: 24px;
+}

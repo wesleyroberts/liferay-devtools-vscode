@@ -9,6 +9,21 @@
   "categories": ["Other"],
   "activationEvents": [
     "onCommand:liferay.createWorkspace",
+    "onCommand:liferay.createClientExtension",
+    "onCommand:liferay.createClientExtension.customElement",
+    "onCommand:liferay.createClientExtension.customElementReactVite",
+    "onCommand:liferay.createClientExtension.customElementAngular",
+    "onCommand:liferay.createClientExtension.globalJS",
+    "onCommand:liferay.createClientExtension.globalJSInstance",
+    "onCommand:liferay.createClientExtension.globalCSS",
+    "onCommand:liferay.createClientExtension.globalCSSCompany",
+    "onCommand:liferay.createClientExtension.globalCSSPage",
+    "onCommand:liferay.createClientExtension.iframe",
+    "onCommand:liferay.createClientExtension.siteInitializer",
+    "onCommand:liferay.createClientExtension.batch",
+    "onCommand:liferay.createClientExtension.etcCron",
+    "onCommand:liferay.createClientExtension.etcNode",
+    "onCommand:liferay.createClientExtension.etcSpringBoot",
     "onCommand:liferay.downloadBundle",
     "onCommand:liferay.managePortal",
     "onCommand:liferay.startPortal",
@@ -26,6 +41,66 @@
         "title": "Liferay: Download Bundle"
       },
       {
+        "command": "liferay.createClientExtension",
+        "title": "Liferay: Create Client Extension"
+      },
+      {
+        "command": "liferay.createClientExtension.customElement",
+        "title": "Liferay: Create Client Extension - Custom Element"
+      },
+      {
+        "command": "liferay.createClientExtension.customElementReactVite",
+        "title": "Liferay: Create Client Extension - Custom Element React Vite"
+      },
+      {
+        "command": "liferay.createClientExtension.customElementAngular",
+        "title": "Liferay: Create Client Extension - Custom Element Angular"
+      },
+      {
+        "command": "liferay.createClientExtension.globalJS",
+        "title": "Liferay: Create Client Extension - Global JS"
+      },
+      {
+        "command": "liferay.createClientExtension.globalJSInstance",
+        "title": "Liferay: Create Client Extension - Global JS Instance"
+      },
+      {
+        "command": "liferay.createClientExtension.globalCSS",
+        "title": "Liferay: Create Client Extension - Global CSS"
+      },
+      {
+        "command": "liferay.createClientExtension.globalCSSCompany",
+        "title": "Liferay: Create Client Extension - Global CSS Company"
+      },
+      {
+        "command": "liferay.createClientExtension.globalCSSPage",
+        "title": "Liferay: Create Client Extension - Global CSS Page"
+      },
+      {
+        "command": "liferay.createClientExtension.iframe",
+        "title": "Liferay: Create Client Extension - IFrame"
+      },
+      {
+        "command": "liferay.createClientExtension.siteInitializer",
+        "title": "Liferay: Create Client Extension - Site Initializer"
+      },
+      {
+        "command": "liferay.createClientExtension.batch",
+        "title": "Liferay: Create Client Extension - Batch"
+      },
+      {
+        "command": "liferay.createClientExtension.etcCron",
+        "title": "Liferay: Create Client Extension - ETC Cron"
+      },
+      {
+        "command": "liferay.createClientExtension.etcNode",
+        "title": "Liferay: Create Client Extension - ETC Node"
+      },
+      {
+        "command": "liferay.createClientExtension.etcSpringBoot",
+        "title": "Liferay: Create Client Extension - ETC Spring Boot"
+      },
+      {
         "command": "liferay.managePortal",
         "title": "Liferay: Manage Portal"
       },
@@ -37,7 +112,84 @@
         "command": "liferay.stopPortal",
         "title": "Liferay: Stop Portal"
       }
-    ]
+    ],
+    "submenus": [
+      {
+        "id": "liferay.clientExtensionsSubmenu",
+        "label": "Liferay Client Extension"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "submenu": "liferay.clientExtensionsSubmenu",
+          "when": "explorerResourceIsFolder && resourceFilename == client-extensions",
+          "group": "navigation@20"
+        }
+      ],
+      "liferay.clientExtensionsSubmenu": [
+        {
+          "command": "liferay.createClientExtension.customElement",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.customElementReactVite",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.customElementAngular",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.siteInitializer",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.batch",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.etcCron",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.etcNode",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.etcSpringBoot",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.globalJS",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.globalJSInstance",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.globalCSS",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.globalCSSCompany",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.globalCSSPage",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.iframe",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension",
+          "group": "2_more"
+        }
+      ]
+    }
   },
   "scripts": {
     "compile": "node esbuild.js",

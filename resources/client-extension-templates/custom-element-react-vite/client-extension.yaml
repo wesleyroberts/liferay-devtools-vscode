@@ -1,0 +1,16 @@
+assemble:
+  - from: build/static
+    into: static
+
+__PROJECT_ID__:
+  cssURLs:
+    - assets/index.css
+  friendlyURLMapping: __FRIENDLY_URL_MAPPING__
+  htmlElementName: __CUSTOM_ELEMENT_TAG__
+  instanceable: true
+  name: __PROJECT_TITLE__
+  portletCategoryName: category.client-extensions
+  type: customElement
+  urls:
+    - assets/index.js
+  useESM: true

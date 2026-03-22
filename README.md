@@ -9,6 +9,7 @@ O objetivo desta extensao e simplificar o setup de projetos Liferay diretamente 
 Com esta extensao, voce pode:
 
 - criar um novo Liferay Workspace
+- criar client extensions a partir da pasta `client-extensions`
 - escolher entre `Liferay DXP` e `Liferay Portal Community`
 - selecionar a versao do produto
 - gerar a estrutura padrao do workspace
@@ -61,6 +62,32 @@ Esse comando:
 - mostra progresso visual durante a execucao
 - envia logs para o canal `Liferay Workspace`
 - abre automaticamente o painel de controle do portal ao finalizar
+
+### `Liferay: Create Client Extension`
+
+Cria uma nova client extension dentro da pasta `client-extensions`.
+
+Fluxos suportados:
+
+- pelo Command Palette com escolha do tipo
+- pelo clique direito em cima da pasta `client-extensions`
+- submenu contextual com templates para:
+  - `Custom Element`
+  - `Custom Element React Vite`
+  - `Custom Element Angular`
+  - `Site Initializer`
+  - `Batch`
+  - `ETC Cron`
+  - `ETC Node`
+  - `ETC Spring Boot`
+  - `Global CSS Company`
+  - `Global CSS Page`
+  - `Global JS Instance`
+  - `Global JS`
+  - `Global CSS`
+  - `IFrame`
+
+Os templates ficam empacotados dentro do proprio plugin em `resources/client-extension-templates`, o que permite manter todos os arquivos-base da criacao diretamente na extensao.
 
 ### `Liferay: Manage Portal`
 

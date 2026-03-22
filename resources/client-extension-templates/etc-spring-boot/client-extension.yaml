@@ -1,0 +1,10 @@
+assemble:
+  - fromTask: bootJar
+
+__PROJECT_ID__-oauth-application-user-agent:
+  .serviceAddress: localhost:58081
+  .serviceScheme: http
+  name: __PROJECT_TITLE__ OAuth Application User Agent
+  scopes:
+    - Liferay.Headless.Admin.Workflow.everything
+  type: oAuthApplicationUserAgent

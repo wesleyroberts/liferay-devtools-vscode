@@ -35,9 +35,377 @@ __export(extension_exports, {
 });
 module.exports = __toCommonJS(extension_exports);
 
+// src/commands/createClientExtension.ts
+var fs2 = __toESM(require("node:fs/promises"));
+var path2 = __toESM(require("node:path"));
+var vscode = __toESM(require("vscode"));
+
+// src/core/clientExtensionGenerator.ts
+var fs = __toESM(require("node:fs/promises"));
+var path = __toESM(require("node:path"));
+var CLIENT_EXTENSION_TEMPLATES = [
+  {
+    id: "custom-element",
+    label: "Custom Element",
+    description: "Widget frontend com HTML, CSS e JavaScript",
+    detail: "Baseado nos samples de custom element, com assets locais"
+  },
+  {
+    id: "custom-element-react-vite",
+    label: "Custom Element React Vite",
+    description: "Starter React com Vite para custom element",
+    detail: "Inspirado no liferay-sample-custom-element-react-vite"
+  },
+  {
+    id: "custom-element-angular",
+    label: "Custom Element Angular",
+    description: "Starter Angular para custom element",
+    detail: "Inspirado no liferay-sample-custom-element-angular"
+  },
+  {
+    id: "global-js",
+    label: "Global JS",
+    description: "JavaScript executado nas paginas do portal",
+    detail: "Estrutura simples com arquivo global.js e assemble"
+  },
+  {
+    id: "global-js-instance",
+    label: "Global JS Instance",
+    description: "JavaScript global para toda a instancia",
+    detail: "Usa scope company e scriptLocation head"
+  },
+  {
+    id: "global-css",
+    label: "Global CSS",
+    description: "CSS global para paginas do portal",
+    detail: "Estrutura simples com arquivo global.css e assemble"
+  },
+  {
+    id: "global-css-company",
+    label: "Global CSS Company",
+    description: "CSS aplicado automaticamente em toda a instancia",
+    detail: "Usa scope company como nos samples company scoped"
+  },
+  {
+    id: "global-css-page",
+    label: "Global CSS Page",
+    description: "CSS para habilitar em paginas especificas",
+    detail: "Template page scoped semelhante ao sample page"
+  },
+  {
+    id: "iframe",
+    label: "IFrame",
+    description: "Widget que incorpora uma URL externa",
+    detail: "Template minimo para apontar para uma aplicacao hospedada"
+  },
+  {
+    id: "site-initializer",
+    label: "Site Initializer",
+    description: "Base para empacotar conteudo inicial de site",
+    detail: "Inspirado no liferay-sample-site-initializer"
+  },
+  {
+    id: "batch",
+    label: "Batch",
+    description: "Base para importar dados via Batch Engine",
+    detail: "Inspirado no liferay-sample-batch"
+  },
+  {
+    id: "etc-cron",
+    label: "ETC Cron",
+    description: "Microservico Spring Boot com rotina agendada",
+    detail: "Inspirado no liferay-sample-etc-cron"
+  },
+  {
+    id: "etc-node",
+    label: "ETC Node",
+    description: "Microservico Node.js para integracoes",
+    detail: "Inspirado no liferay-sample-etc-node"
+  },
+  {
+    id: "etc-spring-boot",
+    label: "ETC Spring Boot",
+    description: "Microservico Spring Boot para integracoes",
+    detail: "Inspirado no liferay-sample-etc-spring-boot"
+  }
+];
+function getClientExtensionTemplate(templateId) {
+  const template = CLIENT_EXTENSION_TEMPLATES.find(
+    (item) => item.id === templateId
+  );
+  if (!template) {
+    throw new Error(`Template de client extension invalido: ${templateId}`);
+  }
+  return template;
+}
+async function generateClientExtension(params) {
+  const { context, clientExtensionsDir, projectName, templateId } = params;
+  const templateDir = path.join(
+    context.extensionPath,
+    "resources",
+    "client-extension-templates",
+    templateId
+  );
+  const projectDir = path.join(clientExtensionsDir, projectName);
+  await assertPathExists(templateDir, "Template interno nao encontrado");
+  await assertPathDoesNotExist(
+    projectDir,
+    "Ja existe uma client extension com esse nome"
+  );
+  const replacements = buildTemplateReplacements(projectName);
+  await copyTemplateDir(templateDir, projectDir, replacements);
+}
+async function assertPathExists(filePath, message) {
+  try {
+    await fs.access(filePath);
+  } catch {
+    throw new Error(`${message}: ${filePath}`);
+  }
+}
+async function assertPathDoesNotExist(filePath, message) {
+  try {
+    await fs.access(filePath);
+    throw new Error(message);
+  } catch (error) {
+    if (error instanceof Error && error.message === message) {
+      throw error;
+    }
+  }
+}
+async function copyTemplateDir(src, dest, replacements) {
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      await copyTemplateDir(srcPath, destPath, replacements);
+      continue;
+    }
+    const content = await fs.readFile(srcPath, "utf8");
+    await fs.writeFile(destPath, applyReplacements(content, replacements), "utf8");
+  }
+}
+function applyReplacements(content, replacements) {
+  return Object.entries(replacements).reduce((result, [token, value]) => {
+    return result.split(token).join(value);
+  }, content);
+}
+function buildTemplateReplacements(projectName) {
+  const projectTitle = projectName.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+  const customElementTag = projectName.includes("-") ? projectName : `${projectName}-element`;
+  return {
+    "__PROJECT_ID__": projectName,
+    "__PROJECT_NAME__": projectName,
+    "__PROJECT_TITLE__": projectTitle,
+    "__CUSTOM_ELEMENT_TAG__": customElementTag,
+    "__FRIENDLY_URL_MAPPING__": projectName
+  };
+}
+
+// src/commands/createClientExtension.ts
+function registerCreateClientExtensionCommands(context) {
+  const commandConfigs = [
+    {
+      command: "liferay.createClientExtension"
+    },
+    {
+      command: "liferay.createClientExtension.customElement",
+      templateId: "custom-element"
+    },
+    {
+      command: "liferay.createClientExtension.customElementReactVite",
+      templateId: "custom-element-react-vite"
+    },
+    {
+      command: "liferay.createClientExtension.customElementAngular",
+      templateId: "custom-element-angular"
+    },
+    {
+      command: "liferay.createClientExtension.globalJS",
+      templateId: "global-js"
+    },
+    {
+      command: "liferay.createClientExtension.globalJSInstance",
+      templateId: "global-js-instance"
+    },
+    {
+      command: "liferay.createClientExtension.globalCSS",
+      templateId: "global-css"
+    },
+    {
+      command: "liferay.createClientExtension.globalCSSCompany",
+      templateId: "global-css-company"
+    },
+    {
+      command: "liferay.createClientExtension.globalCSSPage",
+      templateId: "global-css-page"
+    },
+    {
+      command: "liferay.createClientExtension.iframe",
+      templateId: "iframe"
+    },
+    {
+      command: "liferay.createClientExtension.siteInitializer",
+      templateId: "site-initializer"
+    },
+    {
+      command: "liferay.createClientExtension.batch",
+      templateId: "batch"
+    },
+    {
+      command: "liferay.createClientExtension.etcCron",
+      templateId: "etc-cron"
+    },
+    {
+      command: "liferay.createClientExtension.etcNode",
+      templateId: "etc-node"
+    },
+    {
+      command: "liferay.createClientExtension.etcSpringBoot",
+      templateId: "etc-spring-boot"
+    }
+  ];
+  for (const config of commandConfigs) {
+    const disposable = vscode.commands.registerCommand(
+      config.command,
+      async (resource) => {
+        await runCreateClientExtensionFlow(context, resource, config.templateId);
+      }
+    );
+    context.subscriptions.push(disposable);
+  }
+}
+async function runCreateClientExtensionFlow(context, resource, initialTemplateId) {
+  try {
+    const clientExtensionsDir = await resolveClientExtensionsDir(resource);
+    if (!clientExtensionsDir) {
+      return;
+    }
+    const templateId = initialTemplateId ?? await pickTemplateId();
+    if (!templateId) {
+      return;
+    }
+    const template = getClientExtensionTemplate(templateId);
+    const projectName = await vscode.window.showInputBox({
+      prompt: `Nome da pasta para ${template.label}`,
+      placeHolder: "ex: acme-global-js",
+      validateInput: validateProjectName
+    });
+    if (!projectName) {
+      return;
+    }
+    const projectDir = path2.join(clientExtensionsDir, projectName);
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `Criando client extension ${projectName}...`,
+        cancellable: false
+      },
+      async () => {
+        await generateClientExtension({
+          context,
+          clientExtensionsDir,
+          projectName,
+          templateId
+        });
+      }
+    );
+    const openOption = "Abrir pasta";
+    const revealOption = "Revelar no Explorer";
+    const choice = await vscode.window.showInformationMessage(
+      `Client extension criada com sucesso: ${projectDir}`,
+      openOption,
+      revealOption
+    );
+    if (choice === openOption) {
+      await vscode.commands.executeCommand(
+        "vscode.openFolder",
+        vscode.Uri.file(projectDir),
+        true
+      );
+      return;
+    }
+    if (choice === revealOption) {
+      await vscode.commands.executeCommand(
+        "revealInExplorer",
+        vscode.Uri.file(projectDir)
+      );
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    vscode.window.showErrorMessage(
+      `Failed to create client extension: ${message}`
+    );
+  }
+}
+async function pickTemplateId() {
+  const choice = await vscode.window.showQuickPick(
+    CLIENT_EXTENSION_TEMPLATES.map((template) => ({
+      label: template.label,
+      description: template.description,
+      detail: template.detail,
+      value: template.id
+    })),
+    {
+      placeHolder: "Escolha o tipo de client extension"
+    }
+  );
+  return choice?.value;
+}
+async function resolveClientExtensionsDir(resource) {
+  if (resource && path2.basename(resource.fsPath) === "client-extensions") {
+    return resource.fsPath;
+  }
+  const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+  const matchingDirs = [];
+  for (const folder of workspaceFolders) {
+    const candidateDir = path2.join(folder.uri.fsPath, "client-extensions");
+    try {
+      await fs2.access(candidateDir);
+      matchingDirs.push(candidateDir);
+    } catch {
+      continue;
+    }
+  }
+  if (matchingDirs.length === 1) {
+    return matchingDirs[0];
+  }
+  if (matchingDirs.length > 1) {
+    const choice = await vscode.window.showQuickPick(
+      matchingDirs.map((dir) => ({
+        label: path2.basename(path2.dirname(dir)),
+        description: dir,
+        value: dir
+      })),
+      {
+        placeHolder: "Escolha em qual pasta client-extensions deseja criar"
+      }
+    );
+    return choice?.value;
+  }
+  vscode.window.showWarningMessage(
+    "Nenhuma pasta client-extensions foi encontrada no workspace atual."
+  );
+  return void 0;
+}
+function validateProjectName(value) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "Informe o nome da pasta";
+  }
+  if (!/^[a-z0-9-]+$/.test(trimmed)) {
+    return "Use apenas letras minusculas, numeros e hifens";
+  }
+  if (trimmed.startsWith("-") || trimmed.endsWith("-")) {
+    return "Nao comece ou termine com hifen";
+  }
+  return void 0;
+}
+
 // src/commands/createWorkspace.ts
-var path4 = __toESM(require("node:path"));
-var vscode2 = __toESM(require("vscode"));
+var path6 = __toESM(require("node:path"));
+var vscode3 = __toESM(require("vscode"));
 
 // src/core/versions.ts
 var COMMUNITY_VERSIONS = [
@@ -50,22 +418,22 @@ var DXP_VERSIONS = [
 ];
 
 // src/core/workspaceGenerator.ts
-var fs2 = __toESM(require("node:fs/promises"));
-var path2 = __toESM(require("node:path"));
+var fs4 = __toESM(require("node:fs/promises"));
+var path4 = __toESM(require("node:path"));
 
 // src/utils/fs.ts
-var fs = __toESM(require("node:fs/promises"));
-var path = __toESM(require("node:path"));
+var fs3 = __toESM(require("node:fs/promises"));
+var path3 = __toESM(require("node:path"));
 async function copyDir(src, dest) {
-  await fs.mkdir(dest, { recursive: true });
-  const entries = await fs.readdir(src, { withFileTypes: true });
+  await fs3.mkdir(dest, { recursive: true });
+  const entries = await fs3.readdir(src, { withFileTypes: true });
   for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
+    const srcPath = path3.join(src, entry.name);
+    const destPath = path3.join(dest, entry.name);
     if (entry.isDirectory()) {
       await copyDir(srcPath, destPath);
     } else {
-      await fs.copyFile(srcPath, destPath);
+      await fs3.copyFile(srcPath, destPath);
     }
   }
 }
@@ -73,27 +441,27 @@ async function copyDir(src, dest) {
 // src/core/workspaceGenerator.ts
 async function generateWorkspace(params) {
   const { context, workspaceDir, workspaceName, productVersion } = params;
-  const templateDir = path2.join(
+  const templateDir = path4.join(
     context.extensionPath,
     "resources",
     "workspace-template"
   );
   const requiredFiles = [
-    path2.join(templateDir, "gradlew"),
-    path2.join(templateDir, "gradlew.bat"),
-    path2.join(templateDir, "gradle", "wrapper", "gradle-wrapper.jar"),
-    path2.join(templateDir, "gradle", "wrapper", "gradle-wrapper.properties")
+    path4.join(templateDir, "gradlew"),
+    path4.join(templateDir, "gradlew.bat"),
+    path4.join(templateDir, "gradle", "wrapper", "gradle-wrapper.jar"),
+    path4.join(templateDir, "gradle", "wrapper", "gradle-wrapper.properties")
   ];
   for (const file of requiredFiles) {
     try {
-      await fs2.access(file);
+      await fs4.access(file);
     } catch {
       throw new Error(
         `Arquivo obrigat\xF3rio do Gradle Wrapper n\xE3o encontrado: ${file}`
       );
     }
   }
-  await fs2.mkdir(workspaceDir, { recursive: true });
+  await fs4.mkdir(workspaceDir, { recursive: true });
   await copyDir(templateDir, workspaceDir);
   const settingsGradle = `buildscript {
     repositories {
@@ -130,18 +498,18 @@ target.platform.index.sources=false
 node_modules/
 .DS_Store
 `;
-  await fs2.writeFile(
-    path2.join(workspaceDir, "settings.gradle"),
+  await fs4.writeFile(
+    path4.join(workspaceDir, "settings.gradle"),
     settingsGradle,
     "utf8"
   );
-  await fs2.writeFile(
-    path2.join(workspaceDir, "gradle.properties"),
+  await fs4.writeFile(
+    path4.join(workspaceDir, "gradle.properties"),
     gradleProperties,
     "utf8"
   );
-  await fs2.writeFile(
-    path2.join(workspaceDir, ".gitignore"),
+  await fs4.writeFile(
+    path4.join(workspaceDir, ".gitignore"),
     gitignore,
     "utf8"
   );
@@ -155,20 +523,20 @@ async function createWorkspaceDirectories(workspaceDir) {
     "themes"
   ];
   for (const dir of directories) {
-    await fs2.mkdir(path2.join(workspaceDir, dir), { recursive: true });
+    await fs4.mkdir(path4.join(workspaceDir, dir), { recursive: true });
   }
-  const configsDir = path2.join(workspaceDir, "configs", "local");
-  await fs2.mkdir(configsDir, { recursive: true });
+  const configsDir = path4.join(workspaceDir, "configs", "local");
+  await fs4.mkdir(configsDir, { recursive: true });
 }
 
 // src/core/gradleRunner.ts
-var fs3 = __toESM(require("node:fs/promises"));
-var path3 = __toESM(require("node:path"));
+var fs5 = __toESM(require("node:fs/promises"));
+var path5 = __toESM(require("node:path"));
 var import_node_child_process = require("node:child_process");
 
 // src/core/output.ts
-var vscode = __toESM(require("vscode"));
-var liferayOutput = vscode.window.createOutputChannel(
+var vscode2 = __toESM(require("vscode"));
+var liferayOutput = vscode2.window.createOutputChannel(
   "Liferay Workspace"
 );
 function log(message) {
@@ -233,8 +601,8 @@ async function resolveGradleCommand(workspaceDir, args) {
       commandArgs: ["/c", "gradlew.bat", ...args]
     };
   }
-  const gradlewPath = path3.join(workspaceDir, "gradlew");
-  await fs3.chmod(gradlewPath, 493);
+  const gradlewPath = path5.join(workspaceDir, "gradlew");
+  await fs5.chmod(gradlewPath, 493);
   return {
     command: gradlewPath,
     commandArgs: args
@@ -294,7 +662,7 @@ async function validateJava() {
 
 // src/commands/createWorkspace.ts
 function registerCreateWorkspaceCommand(context) {
-  const disposable = vscode2.commands.registerCommand(
+  const disposable = vscode3.commands.registerCommand(
     "liferay.createWorkspace",
     async () => {
       try {
@@ -306,7 +674,7 @@ function registerCreateWorkspaceCommand(context) {
         if (!productVersion) {
           return;
         }
-        const workspaceName = await vscode2.window.showInputBox({
+        const workspaceName = await vscode3.window.showInputBox({
           prompt: "Nome do workspace",
           placeHolder: "ex: acme-liferay-workspace",
           validateInput: (value) => {
@@ -322,7 +690,7 @@ function registerCreateWorkspaceCommand(context) {
         if (!workspaceName) {
           return;
         }
-        const selectedFolder = await vscode2.window.showOpenDialog({
+        const selectedFolder = await vscode3.window.showOpenDialog({
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
@@ -332,10 +700,10 @@ function registerCreateWorkspaceCommand(context) {
           return;
         }
         const baseDir = selectedFolder[0].fsPath;
-        const workspaceDir = path4.join(baseDir, workspaceName);
-        await vscode2.window.withProgress(
+        const workspaceDir = path6.join(baseDir, workspaceName);
+        await vscode3.window.withProgress(
           {
-            location: vscode2.ProgressLocation.Notification,
+            location: vscode3.ProgressLocation.Notification,
             title: `Criando workspace ${workspaceName}...`,
             cancellable: false
           },
@@ -352,7 +720,7 @@ function registerCreateWorkspaceCommand(context) {
           }
         );
         const openOption = "Abrir workspace";
-        const choice = await vscode2.window.showInformationMessage(
+        const choice = await vscode3.window.showInformationMessage(
           `Workspace criado com sucesso: ${workspaceDir}`,
           openOption
         );
@@ -361,7 +729,7 @@ function registerCreateWorkspaceCommand(context) {
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro desconhecido";
-        vscode2.window.showErrorMessage(
+        vscode3.window.showErrorMessage(
           `Failed to create workspace: ${message}`
         );
       }
@@ -370,7 +738,7 @@ function registerCreateWorkspaceCommand(context) {
   context.subscriptions.push(disposable);
 }
 async function pickEdition() {
-  const choice = await vscode2.window.showQuickPick(
+  const choice = await vscode3.window.showQuickPick(
     [
       {
         label: "DXP",
@@ -391,7 +759,7 @@ async function pickEdition() {
 }
 async function pickProductVersion(edition) {
   const options = edition === "dxp" ? DXP_VERSIONS : COMMUNITY_VERSIONS;
-  const choice = await vscode2.window.showQuickPick(
+  const choice = await vscode3.window.showQuickPick(
     options.map((option) => ({
       label: option.label,
       description: option.value,
@@ -404,8 +772,8 @@ async function pickProductVersion(edition) {
   return choice?.value;
 }
 async function openWorkspace(workspaceDir) {
-  const workspaceUri = vscode2.Uri.file(workspaceDir);
-  await vscode2.commands.executeCommand(
+  const workspaceUri = vscode3.Uri.file(workspaceDir);
+  await vscode3.commands.executeCommand(
     "vscode.openFolder",
     workspaceUri,
     true
@@ -413,15 +781,15 @@ async function openWorkspace(workspaceDir) {
 }
 
 // src/commands/downloadBundle.ts
-var vscode3 = __toESM(require("vscode"));
+var vscode4 = __toESM(require("vscode"));
 function registerDownloadBundleCommand(context) {
-  const disposable = vscode3.commands.registerCommand(
+  const disposable = vscode4.commands.registerCommand(
     "liferay.downloadBundle",
     async () => {
       try {
-        const workspaceFolder = vscode3.workspace.workspaceFolders?.[0];
+        const workspaceFolder = vscode4.workspace.workspaceFolders?.[0];
         if (!workspaceFolder) {
-          vscode3.window.showErrorMessage(
+          vscode4.window.showErrorMessage(
             "Abra um Liferay Workspace antes de baixar o bundle."
           );
           return;
@@ -429,9 +797,9 @@ function registerDownloadBundleCommand(context) {
         const workspaceDir = workspaceFolder.uri.fsPath;
         let progressValue = 0;
         liferayOutput.show(true);
-        await vscode3.window.withProgress(
+        await vscode4.window.withProgress(
           {
-            location: vscode3.ProgressLocation.Notification,
+            location: vscode4.ProgressLocation.Notification,
             title: "Baixando bundle do Liferay...",
             cancellable: false
           },
@@ -467,13 +835,13 @@ function registerDownloadBundleCommand(context) {
             }
           }
         );
-        await vscode3.commands.executeCommand("liferay.managePortal");
-        vscode3.window.showInformationMessage(
+        await vscode4.commands.executeCommand("liferay.managePortal");
+        vscode4.window.showInformationMessage(
           "Bundle baixado com sucesso. O painel de controle do portal foi aberto."
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro desconhecido";
-        vscode3.window.showErrorMessage(
+        vscode4.window.showErrorMessage(
           `Falha ao baixar o bundle: ${message}`
         );
       }
@@ -520,25 +888,25 @@ function mapGradleLineToMessage(line) {
 }
 
 // src/commands/managePortal.ts
-var vscode4 = __toESM(require("vscode"));
+var vscode5 = __toESM(require("vscode"));
 function registerManagePortalCommands(context, portalRuntime) {
   const panel = new PortalControlPanel(portalRuntime);
   context.subscriptions.push(
     panel,
-    vscode4.commands.registerCommand("liferay.managePortal", async () => {
+    vscode5.commands.registerCommand("liferay.managePortal", async () => {
       const workspaceDir = getCurrentWorkspaceDir();
       if (!workspaceDir) {
-        vscode4.window.showErrorMessage(
+        vscode5.window.showErrorMessage(
           "Abra um Liferay Workspace antes de gerenciar o portal."
         );
         return;
       }
       panel.show(workspaceDir);
     }),
-    vscode4.commands.registerCommand("liferay.startPortal", async () => {
+    vscode5.commands.registerCommand("liferay.startPortal", async () => {
       const workspaceDir = getCurrentWorkspaceDir();
       if (!workspaceDir) {
-        vscode4.window.showErrorMessage(
+        vscode5.window.showErrorMessage(
           "Abra um Liferay Workspace antes de iniciar o portal."
         );
         return;
@@ -546,14 +914,14 @@ function registerManagePortalCommands(context, portalRuntime) {
       panel.show(workspaceDir);
       await portalRuntime.start(workspaceDir);
     }),
-    vscode4.commands.registerCommand("liferay.stopPortal", async () => {
+    vscode5.commands.registerCommand("liferay.stopPortal", async () => {
       panel.show();
       await portalRuntime.stop();
     })
   );
 }
 function getCurrentWorkspaceDir() {
-  return vscode4.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  return vscode5.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 var PortalControlPanel = class {
   constructor(portalRuntime) {
@@ -573,10 +941,10 @@ var PortalControlPanel = class {
       this.workspaceDir = workspaceDir;
     }
     if (!this.panel) {
-      this.panel = vscode4.window.createWebviewPanel(
+      this.panel = vscode5.window.createWebviewPanel(
         "liferayPortalControl",
         "Liferay Portal Control",
-        vscode4.ViewColumn.Active,
+        vscode5.ViewColumn.Active,
         {
           enableScripts: true,
           retainContextWhenHidden: true
@@ -594,7 +962,7 @@ var PortalControlPanel = class {
             }
           } catch (error) {
             const text = error instanceof Error ? error.message : "Erro desconhecido";
-            vscode4.window.showErrorMessage(text);
+            vscode5.window.showErrorMessage(text);
           }
         },
         void 0,
@@ -604,7 +972,7 @@ var PortalControlPanel = class {
         this.panel = void 0;
       }, void 0, this.disposables);
     }
-    this.panel.reveal(vscode4.ViewColumn.Active, true);
+    this.panel.reveal(vscode5.ViewColumn.Active, true);
     this.panel.webview.postMessage({
       type: "state",
       payload: this.buildViewState(this.portalRuntime.getState())
@@ -877,17 +1245,17 @@ function getNonce() {
 }
 
 // src/core/portalRuntime.ts
-var fs4 = __toESM(require("node:fs/promises"));
-var path5 = __toESM(require("node:path"));
+var fs6 = __toESM(require("node:fs/promises"));
+var path7 = __toESM(require("node:path"));
 var import_node_child_process3 = require("node:child_process");
-var vscode5 = __toESM(require("vscode"));
+var vscode6 = __toESM(require("vscode"));
 var PortalRuntime = class {
   constructor() {
     this.state = {
       status: "idle",
       logs: []
     };
-    this.onDidChangeStateEmitter = new vscode5.EventEmitter();
+    this.onDidChangeStateEmitter = new vscode6.EventEmitter();
     this.onDidChangeState = this.onDidChangeStateEmitter.event;
   }
   getState() {
@@ -1041,10 +1409,10 @@ var PortalRuntime = class {
   }
 };
 async function findPortalDir(workspaceDir) {
-  const bundlesDir = path5.join(workspaceDir, "bundles");
+  const bundlesDir = path7.join(workspaceDir, "bundles");
   let entries;
   try {
-    entries = await fs4.readdir(bundlesDir, { withFileTypes: true });
+    entries = await fs6.readdir(bundlesDir, { withFileTypes: true });
   } catch {
     throw new Error("A pasta bundles nao foi encontrada. Execute o download do bundle primeiro.");
   }
@@ -1052,9 +1420,9 @@ async function findPortalDir(workspaceDir) {
     if (!entry.isDirectory()) {
       continue;
     }
-    const portalDir = path5.join(bundlesDir, entry.name);
-    const catalinaBat = path5.join(portalDir, "bin", "catalina.bat");
-    const catalinaSh = path5.join(portalDir, "bin", "catalina.sh");
+    const portalDir = path7.join(bundlesDir, entry.name);
+    const catalinaBat = path7.join(portalDir, "bin", "catalina.bat");
+    const catalinaSh = path7.join(portalDir, "bin", "catalina.sh");
     if (await exists(catalinaBat) || await exists(catalinaSh)) {
       return portalDir;
     }
@@ -1064,7 +1432,7 @@ async function findPortalDir(workspaceDir) {
   );
 }
 function buildPortalCommand(portalDir, action) {
-  const binDir = path5.join(portalDir, "bin");
+  const binDir = path7.join(portalDir, "bin");
   if (process.platform === "win32") {
     return {
       command: "cmd.exe",
@@ -1073,7 +1441,7 @@ function buildPortalCommand(portalDir, action) {
     };
   }
   return {
-    command: path5.join(binDir, "catalina.sh"),
+    command: path7.join(binDir, "catalina.sh"),
     args: [action],
     cwd: binDir
   };
@@ -1109,7 +1477,7 @@ async function stopPortalProcess(pid, portalDir) {
 }
 async function exists(filePath) {
   try {
-    await fs4.access(filePath);
+    await fs6.access(filePath);
     return true;
   } catch {
     return false;
@@ -1120,6 +1488,7 @@ async function exists(filePath) {
 function activate(context) {
   const portalRuntime = new PortalRuntime();
   registerCreateWorkspaceCommand(context);
+  registerCreateClientExtensionCommands(context);
   registerDownloadBundleCommand(context);
   registerManagePortalCommands(context, portalRuntime);
   context.subscriptions.push(portalRuntime);

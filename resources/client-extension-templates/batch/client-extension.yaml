@@ -1,0 +1,17 @@
+assemble:
+  - from: batch
+    into: batch
+
+__PROJECT_ID__:
+  name: __PROJECT_TITLE__
+  oAuthApplicationHeadlessServer: __PROJECT_ID__-oauth-application-headless-server
+  type: batch
+
+__PROJECT_ID__-oauth-application-headless-server:
+  .serviceAddress: localhost:8080
+  .serviceScheme: http
+  name: __PROJECT_TITLE__ OAuth Application Headless Server
+  scopes:
+    - Liferay.Headless.Admin.ListType.everything
+    - Liferay.Headless.Admin.Workflow.everything
+  type: oAuthApplicationHeadlessServer

@@ -1,0 +1,7 @@
+__PROJECT_ID__:
+  friendlyURLMapping: __FRIENDLY_URL_MAPPING__
+  instanceable: true
+  name: __PROJECT_TITLE__
+  portletCategoryName: category.client-extensions
+  type: iframe
+  url: https://example.com
