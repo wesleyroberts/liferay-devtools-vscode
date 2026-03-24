@@ -1,8 +1,35 @@
 {
-  "name": "liferay-workspace-mvp",
-  "displayName": "Liferay Workspace MVP",
-  "version": "0.0.1",
-  "description": "Create Liferay Workspace without Blade CLI",
+  "name": "liferay-dev-tools",
+  "displayName": "Liferay Dev Tools",
+  "version": "0.0.4",
+  "description": "Create and manage Liferay workspaces, client extensions, bundles, and common OSGi modules directly from VS Code.",
+  "publisher": "WesleyRoberts",
+  "icon": "images/icon.png",
+  "license": "MIT",
+  "homepage": "https://github.com/wesleyroberts/liferay-devtools-vscode",
+  "bugs": {
+    "url": "https://github.com/wesleyroberts/liferay-devtools-vscode/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wesleyroberts/liferay-devtools-vscode.git"
+  },
+  "galleryBanner": {
+    "color": "#0B1F4D",
+    "theme": "dark"
+  },
+  "keywords": [
+    "liferay",
+    "dxp",
+    "portal",
+    "workspace",
+    "client-extension",
+    "osgi",
+    "blade",
+    "gradle",
+    "java",
+    "vscode"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },

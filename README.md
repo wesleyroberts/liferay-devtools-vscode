@@ -1,4 +1,8 @@
-# Liferay Workspace MVP
+<p align="center">
+  <img src="images/icon.png" alt="Liferay Dev Tools" width="160" />
+</p>
+
+# Liferay Dev Tools
 
 Crie workspaces Liferay 7.4 no VS Code em poucos passos, sem Blade CLI e sem depender de Gradle instalado globalmente.
 
