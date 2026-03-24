@@ -781,16 +781,24 @@ async function openWorkspace(workspaceDir) {
 }
 
 // src/commands/downloadBundle.ts
+var fs6 = __toESM(require("node:fs/promises"));
+var path7 = __toESM(require("node:path"));
 var vscode4 = __toESM(require("vscode"));
 function registerDownloadBundleCommand(context) {
   const disposable = vscode4.commands.registerCommand(
     "liferay.downloadBundle",
-    async () => {
+    async (resource) => {
       try {
-        const workspaceFolder = vscode4.workspace.workspaceFolders?.[0];
+        const workspaceFolder = resource ? vscode4.workspace.getWorkspaceFolder(resource) : vscode4.workspace.workspaceFolders?.[0];
         if (!workspaceFolder) {
           vscode4.window.showErrorMessage(
             "Abra um Liferay Workspace antes de baixar o bundle."
+          );
+          return;
+        }
+        if (resource && await isNonEmptyBundleDir(resource)) {
+          vscode4.window.showWarningMessage(
+            "A opcao de download so pode ser usada quando a pasta bundle/bundles estiver vazia."
           );
           return;
         }
@@ -848,6 +856,14 @@ function registerDownloadBundleCommand(context) {
     }
   );
   context.subscriptions.push(disposable);
+}
+async function isNonEmptyBundleDir(resource) {
+  const folderName = path7.basename(resource.fsPath).toLowerCase();
+  if (folderName !== "bundle" && folderName !== "bundles") {
+    return false;
+  }
+  const entries = await fs6.readdir(resource.fsPath, { withFileTypes: true });
+  return entries.length > 0;
 }
 function mapGradleLineToMessage(line) {
   const normalized = line.toLowerCase();
@@ -1245,8 +1261,8 @@ function getNonce() {
 }
 
 // src/core/portalRuntime.ts
-var fs6 = __toESM(require("node:fs/promises"));
-var path7 = __toESM(require("node:path"));
+var fs7 = __toESM(require("node:fs/promises"));
+var path8 = __toESM(require("node:path"));
 var import_node_child_process3 = require("node:child_process");
 var vscode6 = __toESM(require("vscode"));
 var PortalRuntime = class {
@@ -1409,10 +1425,10 @@ var PortalRuntime = class {
   }
 };
 async function findPortalDir(workspaceDir) {
-  const bundlesDir = path7.join(workspaceDir, "bundles");
+  const bundlesDir = path8.join(workspaceDir, "bundles");
   let entries;
   try {
-    entries = await fs6.readdir(bundlesDir, { withFileTypes: true });
+    entries = await fs7.readdir(bundlesDir, { withFileTypes: true });
   } catch {
     throw new Error("A pasta bundles nao foi encontrada. Execute o download do bundle primeiro.");
   }
@@ -1420,9 +1436,9 @@ async function findPortalDir(workspaceDir) {
     if (!entry.isDirectory()) {
       continue;
     }
-    const portalDir = path7.join(bundlesDir, entry.name);
-    const catalinaBat = path7.join(portalDir, "bin", "catalina.bat");
-    const catalinaSh = path7.join(portalDir, "bin", "catalina.sh");
+    const portalDir = path8.join(bundlesDir, entry.name);
+    const catalinaBat = path8.join(portalDir, "bin", "catalina.bat");
+    const catalinaSh = path8.join(portalDir, "bin", "catalina.sh");
     if (await exists(catalinaBat) || await exists(catalinaSh)) {
       return portalDir;
     }
@@ -1432,7 +1448,7 @@ async function findPortalDir(workspaceDir) {
   );
 }
 function buildPortalCommand(portalDir, action) {
-  const binDir = path7.join(portalDir, "bin");
+  const binDir = path8.join(portalDir, "bin");
   if (process.platform === "win32") {
     return {
       command: "cmd.exe",
@@ -1441,7 +1457,7 @@ function buildPortalCommand(portalDir, action) {
     };
   }
   return {
-    command: path7.join(binDir, "catalina.sh"),
+    command: path8.join(binDir, "catalina.sh"),
     args: [action],
     cwd: binDir
   };
@@ -1477,7 +1493,7 @@ async function stopPortalProcess(pid, portalDir) {
 }
 async function exists(filePath) {
   try {
-    await fs6.access(filePath);
+    await fs7.access(filePath);
     return true;
   } catch {
     return false;

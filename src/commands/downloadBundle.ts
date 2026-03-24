@@ -1,3 +1,5 @@
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import * as vscode from "vscode";
 import { runGradleCommand } from "../core/gradleRunner";
 import { validateJava } from "../core/javaValidator";
@@ -8,13 +10,22 @@ export function registerDownloadBundleCommand(
 ) {
   const disposable = vscode.commands.registerCommand(
     "liferay.downloadBundle",
-    async () => {
+    async (resource?: vscode.Uri) => {
       try {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        const workspaceFolder = resource
+          ? vscode.workspace.getWorkspaceFolder(resource)
+          : vscode.workspace.workspaceFolders?.[0];
 
         if (!workspaceFolder) {
           vscode.window.showErrorMessage(
             "Abra um Liferay Workspace antes de baixar o bundle."
+          );
+          return;
+        }
+
+        if (resource && (await isNonEmptyBundleDir(resource))) {
+          vscode.window.showWarningMessage(
+            "A opcao de download so pode ser usada quando a pasta bundle/bundles estiver vazia."
           );
           return;
         }
@@ -86,6 +97,18 @@ export function registerDownloadBundleCommand(
   );
 
   context.subscriptions.push(disposable);
+}
+
+async function isNonEmptyBundleDir(resource: vscode.Uri): Promise<boolean> {
+  const folderName = path.basename(resource.fsPath).toLowerCase();
+
+  if (folderName !== "bundle" && folderName !== "bundles") {
+    return false;
+  }
+
+  const entries = await fs.readdir(resource.fsPath, { withFileTypes: true });
+
+  return entries.length > 0;
 }
 
 function mapGradleLineToMessage(line: string): string {

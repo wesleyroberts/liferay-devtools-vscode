@@ -122,6 +122,11 @@
     "menus": {
       "explorer/context": [
         {
+          "command": "liferay.downloadBundle",
+          "when": "explorerResourceIsFolder && (resourceFilename == bundles || resourceFilename == bundle)",
+          "group": "navigation@10"
+        },
+        {
           "submenu": "liferay.clientExtensionsSubmenu",
           "when": "explorerResourceIsFolder && resourceFilename == client-extensions",
           "group": "navigation@20"
