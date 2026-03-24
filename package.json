@@ -12,6 +12,8 @@
     "onCommand:liferay.createClientExtension",
     "onCommand:liferay.createClientExtension.customElement",
     "onCommand:liferay.createClientExtension.customElementReactVite",
+    "onCommand:liferay.createClientExtension.customElementSvelte",
+    "onCommand:liferay.createClientExtension.customElementVue",
     "onCommand:liferay.createClientExtension.customElementAngular",
     "onCommand:liferay.createClientExtension.globalJS",
     "onCommand:liferay.createClientExtension.globalJSInstance",
@@ -21,8 +23,12 @@
     "onCommand:liferay.createClientExtension.iframe",
     "onCommand:liferay.createClientExtension.siteInitializer",
     "onCommand:liferay.createClientExtension.batch",
+    "onCommand:liferay.createClientExtension.etcBun",
     "onCommand:liferay.createClientExtension.etcCron",
+    "onCommand:liferay.createClientExtension.etcGolang",
+    "onCommand:liferay.createClientExtension.etcJavaQuarkus",
     "onCommand:liferay.createClientExtension.etcNode",
+    "onCommand:liferay.createClientExtension.etcPythonFastAPI",
     "onCommand:liferay.createClientExtension.etcSpringBoot",
     "onCommand:liferay.downloadBundle",
     "onCommand:liferay.managePortal",
@@ -51,6 +57,14 @@
       {
         "command": "liferay.createClientExtension.customElementReactVite",
         "title": "Liferay: Create Client Extension - Custom Element React Vite"
+      },
+      {
+        "command": "liferay.createClientExtension.customElementSvelte",
+        "title": "Liferay: Create Client Extension - Custom Element Svelte"
+      },
+      {
+        "command": "liferay.createClientExtension.customElementVue",
+        "title": "Liferay: Create Client Extension - Custom Element Vue"
       },
       {
         "command": "liferay.createClientExtension.customElementAngular",
@@ -89,12 +103,28 @@
         "title": "Liferay: Create Client Extension - Batch"
       },
       {
+        "command": "liferay.createClientExtension.etcBun",
+        "title": "Liferay: Create Client Extension - ETC Bun"
+      },
+      {
         "command": "liferay.createClientExtension.etcCron",
         "title": "Liferay: Create Client Extension - ETC Cron"
       },
       {
+        "command": "liferay.createClientExtension.etcGolang",
+        "title": "Liferay: Create Client Extension - ETC Golang"
+      },
+      {
+        "command": "liferay.createClientExtension.etcJavaQuarkus",
+        "title": "Liferay: Create Client Extension - ETC Java Quarkus"
+      },
+      {
         "command": "liferay.createClientExtension.etcNode",
         "title": "Liferay: Create Client Extension - ETC Node"
+      },
+      {
+        "command": "liferay.createClientExtension.etcPythonFastAPI",
+        "title": "Liferay: Create Client Extension - ETC Python FastAPI"
       },
       {
         "command": "liferay.createClientExtension.etcSpringBoot",
@@ -142,6 +172,14 @@
           "group": "1_create"
         },
         {
+          "command": "liferay.createClientExtension.customElementSvelte",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.customElementVue",
+          "group": "1_create"
+        },
+        {
           "command": "liferay.createClientExtension.customElementAngular",
           "group": "1_create"
         },
@@ -154,11 +192,27 @@
           "group": "1_create"
         },
         {
+          "command": "liferay.createClientExtension.etcBun",
+          "group": "1_create"
+        },
+        {
           "command": "liferay.createClientExtension.etcCron",
           "group": "1_create"
         },
         {
+          "command": "liferay.createClientExtension.etcGolang",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.etcJavaQuarkus",
+          "group": "1_create"
+        },
+        {
           "command": "liferay.createClientExtension.etcNode",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createClientExtension.etcPythonFastAPI",
           "group": "1_create"
         },
         {

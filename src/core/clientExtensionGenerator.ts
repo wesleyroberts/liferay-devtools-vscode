@@ -5,6 +5,8 @@ import * as vscode from "vscode";
 export type ClientExtensionTemplateId =
   | "custom-element"
   | "custom-element-react-vite"
+  | "custom-element-svelte"
+  | "custom-element-vue"
   | "custom-element-angular"
   | "global-js"
   | "global-js-instance"
@@ -14,8 +16,12 @@ export type ClientExtensionTemplateId =
   | "iframe"
   | "site-initializer"
   | "batch"
+  | "etc-bun"
   | "etc-cron"
+  | "etc-golang"
+  | "etc-java-quarkus"
   | "etc-node"
+  | "etc-python-fastapi"
   | "etc-spring-boot";
 
 export interface ClientExtensionTemplate {
@@ -44,6 +50,18 @@ export const CLIENT_EXTENSION_TEMPLATES: ClientExtensionTemplate[] = [
     label: "Custom Element React Vite",
     description: "Starter React com Vite para custom element",
     detail: "Inspirado no liferay-sample-custom-element-react-vite"
+  },
+  {
+    id: "custom-element-svelte",
+    label: "Custom Element Svelte",
+    description: "Starter Svelte com Vite para custom element",
+    detail: "Baseado no sample-custom-element-svelte"
+  },
+  {
+    id: "custom-element-vue",
+    label: "Custom Element Vue",
+    description: "Starter Vue com Vite para custom element",
+    detail: "Baseado no sample-custom-element-vue"
   },
   {
     id: "custom-element-angular",
@@ -100,16 +118,40 @@ export const CLIENT_EXTENSION_TEMPLATES: ClientExtensionTemplate[] = [
     detail: "Inspirado no liferay-sample-batch"
   },
   {
+    id: "etc-bun",
+    label: "ETC Bun",
+    description: "Microservico Bun para object actions",
+    detail: "Baseado no sample-etc-bun"
+  },
+  {
     id: "etc-cron",
     label: "ETC Cron",
     description: "Microservico Spring Boot com rotina agendada",
     detail: "Inspirado no liferay-sample-etc-cron"
   },
   {
+    id: "etc-golang",
+    label: "ETC Golang",
+    description: "Microservico Go para object actions",
+    detail: "Baseado no sample-etc-golang"
+  },
+  {
+    id: "etc-java-quarkus",
+    label: "ETC Java Quarkus",
+    description: "Microservico Quarkus para object actions",
+    detail: "Baseado no sample-etc-java-quarkus"
+  },
+  {
     id: "etc-node",
     label: "ETC Node",
     description: "Microservico Node.js para integracoes",
     detail: "Inspirado no liferay-sample-etc-node"
+  },
+  {
+    id: "etc-python-fastapi",
+    label: "ETC Python FastAPI",
+    description: "Microservico FastAPI para object actions",
+    detail: "Baseado no sample-etc-python-fastapi"
   },
   {
     id: "etc-spring-boot",

@@ -1,5 +1,15 @@
 # __PROJECT_TITLE__
 
-Template base para Site Initializer.
+Client extension do tipo `siteInitializer` para criar um site inicial no Liferay.
 
-A documentacao oficial mostra que um site initializer precisa do tipo `siteInitializer` e de um `oAuthApplicationHeadlessServer` associado.
+## O que editar
+
+- `site-initializer/`: estrutura, conteudo e arquivos exportados do site.
+- `client-extension.yaml`: nome do site, ERC e OAuth app associado.
+
+## Como usar com o Liferay
+
+1. Coloque os arquivos do initializer dentro de `site-initializer/`.
+2. No workspace, execute `gradlew deploy` ou `gradlew.bat deploy`.
+3. No portal, crie um novo site e escolha este initializer na lista disponivel.
+4. Use esta opcao quando quiser entregar um site base pronto, com paginas, conteudo e configuracoes iniciais.

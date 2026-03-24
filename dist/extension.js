@@ -57,6 +57,18 @@ var CLIENT_EXTENSION_TEMPLATES = [
     detail: "Inspirado no liferay-sample-custom-element-react-vite"
   },
   {
+    id: "custom-element-svelte",
+    label: "Custom Element Svelte",
+    description: "Starter Svelte com Vite para custom element",
+    detail: "Baseado no sample-custom-element-svelte"
+  },
+  {
+    id: "custom-element-vue",
+    label: "Custom Element Vue",
+    description: "Starter Vue com Vite para custom element",
+    detail: "Baseado no sample-custom-element-vue"
+  },
+  {
     id: "custom-element-angular",
     label: "Custom Element Angular",
     description: "Starter Angular para custom element",
@@ -111,16 +123,40 @@ var CLIENT_EXTENSION_TEMPLATES = [
     detail: "Inspirado no liferay-sample-batch"
   },
   {
+    id: "etc-bun",
+    label: "ETC Bun",
+    description: "Microservico Bun para object actions",
+    detail: "Baseado no sample-etc-bun"
+  },
+  {
     id: "etc-cron",
     label: "ETC Cron",
     description: "Microservico Spring Boot com rotina agendada",
     detail: "Inspirado no liferay-sample-etc-cron"
   },
   {
+    id: "etc-golang",
+    label: "ETC Golang",
+    description: "Microservico Go para object actions",
+    detail: "Baseado no sample-etc-golang"
+  },
+  {
+    id: "etc-java-quarkus",
+    label: "ETC Java Quarkus",
+    description: "Microservico Quarkus para object actions",
+    detail: "Baseado no sample-etc-java-quarkus"
+  },
+  {
     id: "etc-node",
     label: "ETC Node",
     description: "Microservico Node.js para integracoes",
     detail: "Inspirado no liferay-sample-etc-node"
+  },
+  {
+    id: "etc-python-fastapi",
+    label: "ETC Python FastAPI",
+    description: "Microservico FastAPI para object actions",
+    detail: "Baseado no sample-etc-python-fastapi"
   },
   {
     id: "etc-spring-boot",
@@ -218,6 +254,14 @@ function registerCreateClientExtensionCommands(context) {
       templateId: "custom-element-react-vite"
     },
     {
+      command: "liferay.createClientExtension.customElementSvelte",
+      templateId: "custom-element-svelte"
+    },
+    {
+      command: "liferay.createClientExtension.customElementVue",
+      templateId: "custom-element-vue"
+    },
+    {
       command: "liferay.createClientExtension.customElementAngular",
       templateId: "custom-element-angular"
     },
@@ -254,12 +298,28 @@ function registerCreateClientExtensionCommands(context) {
       templateId: "batch"
     },
     {
+      command: "liferay.createClientExtension.etcBun",
+      templateId: "etc-bun"
+    },
+    {
       command: "liferay.createClientExtension.etcCron",
       templateId: "etc-cron"
     },
     {
+      command: "liferay.createClientExtension.etcGolang",
+      templateId: "etc-golang"
+    },
+    {
+      command: "liferay.createClientExtension.etcJavaQuarkus",
+      templateId: "etc-java-quarkus"
+    },
+    {
       command: "liferay.createClientExtension.etcNode",
       templateId: "etc-node"
+    },
+    {
+      command: "liferay.createClientExtension.etcPythonFastAPI",
+      templateId: "etc-python-fastapi"
     },
     {
       command: "liferay.createClientExtension.etcSpringBoot",
@@ -517,6 +577,7 @@ node_modules/
 }
 async function createWorkspaceDirectories(workspaceDir) {
   const directories = [
+    "bundles",
     "modules",
     "configs",
     "client-extensions",

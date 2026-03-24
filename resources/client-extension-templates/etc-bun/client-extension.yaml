@@ -1,0 +1,12 @@
+__PROJECT_ID__-oauth-application-user-agent:
+  .serviceAddress: localhost:8228
+  .serviceScheme: http
+  name: __PROJECT_TITLE__ OAuth Application User Agent
+  scopes:
+    - Liferay.Headless.Admin.User.everything.read
+  type: oAuthApplicationUserAgent
+__PROJECT_ID__-object-action-1:
+  name: __PROJECT_TITLE__ Object Action 1
+  oAuth2ApplicationExternalReferenceCode: __PROJECT_ID__-oauth-application-user-agent
+  resourcePath: /object/action/1
+  type: objectAction

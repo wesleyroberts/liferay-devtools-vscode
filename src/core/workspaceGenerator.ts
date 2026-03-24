@@ -102,6 +102,7 @@ node_modules/
 
 async function createWorkspaceDirectories(workspaceDir: string): Promise<void> {
   const directories = [
+    "bundles",
     "modules",
     "configs",
     "client-extensions",

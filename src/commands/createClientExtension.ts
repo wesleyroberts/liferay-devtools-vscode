@@ -27,6 +27,14 @@ export function registerCreateClientExtensionCommands(
       templateId: "custom-element-react-vite"
     },
     {
+      command: "liferay.createClientExtension.customElementSvelte",
+      templateId: "custom-element-svelte"
+    },
+    {
+      command: "liferay.createClientExtension.customElementVue",
+      templateId: "custom-element-vue"
+    },
+    {
       command: "liferay.createClientExtension.customElementAngular",
       templateId: "custom-element-angular"
     },
@@ -63,12 +71,28 @@ export function registerCreateClientExtensionCommands(
       templateId: "batch"
     },
     {
+      command: "liferay.createClientExtension.etcBun",
+      templateId: "etc-bun"
+    },
+    {
       command: "liferay.createClientExtension.etcCron",
       templateId: "etc-cron"
     },
     {
+      command: "liferay.createClientExtension.etcGolang",
+      templateId: "etc-golang"
+    },
+    {
+      command: "liferay.createClientExtension.etcJavaQuarkus",
+      templateId: "etc-java-quarkus"
+    },
+    {
       command: "liferay.createClientExtension.etcNode",
       templateId: "etc-node"
+    },
+    {
+      command: "liferay.createClientExtension.etcPythonFastAPI",
+      templateId: "etc-python-fastapi"
     },
     {
       command: "liferay.createClientExtension.etcSpringBoot",
