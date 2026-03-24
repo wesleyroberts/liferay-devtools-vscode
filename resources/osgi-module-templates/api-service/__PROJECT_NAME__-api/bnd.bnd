@@ -1,0 +1,4 @@
+Bundle-Name: __PROJECT_TITLE__ API
+Bundle-SymbolicName: __PACKAGE_NAME__.api
+Bundle-Version: 1.0.0
+Export-Package: __PACKAGE_NAME__.api

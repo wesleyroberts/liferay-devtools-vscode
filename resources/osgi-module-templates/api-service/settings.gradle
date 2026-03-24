@@ -1,0 +1,1 @@
+include "__PROJECT_NAME__-api", "__PROJECT_NAME__-service"

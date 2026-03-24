@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { registerCreateClientExtensionCommands } from "./commands/createClientExtension";
+import { registerCreateModuleCommands } from "./commands/createModule";
 import { registerCreateWorkspaceCommand } from "./commands/createWorkspace";
 import { registerDownloadBundleCommand } from "./commands/downloadBundle";
 import { registerManagePortalCommands } from "./commands/managePortal";
@@ -10,6 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   registerCreateWorkspaceCommand(context);
   registerCreateClientExtensionCommands(context);
+  registerCreateModuleCommands(context);
   registerDownloadBundleCommand(context);
   registerManagePortalCommands(context, portalRuntime);
 

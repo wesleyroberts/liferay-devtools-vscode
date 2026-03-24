@@ -1,0 +1,3 @@
+Bundle-Name: __PROJECT_TITLE__ Service
+Bundle-SymbolicName: __PACKAGE_NAME__.service
+Bundle-Version: 1.0.0
