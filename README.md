@@ -6,8 +6,16 @@
 
 Crie e gerencie workspaces Liferay 7.4 no VS Code com um fluxo guiado, usando `Gradle Wrapper` e sem precisar de Blade CLI ou Gradle instalado globalmente.
 
-> Novo por aqui?
-> Assista ao [tutorial em video](videos/tutorial.mp4) e siga o guia rapido abaixo para comecar.
+## Tutorial em Video
+
+Aprenda o fluxo principal da extensao, desde a criacao do workspace ate o uso dos comandos mais importantes:
+
+### ctrl + shift + p
+
+<p align="center">
+  <img src="images/tutorial-gift.gif" alt="Liferay Dev Tools tutorial" width="600" />
+</p>
+
 
 ## O Que Esta Extensao Faz
 
@@ -42,14 +50,6 @@ Para usar a extensao, tenha somente estes pontos em mente:
 2. Garanta que o `Java 11` ou superior esteja configurado na maquina.
 3. Abra o Command Palette no VS Code.
 4. Execute os comandos da extensao para criar e operar seu workspace.
-
-## Tutorial em Video
-
-Aprenda o fluxo principal da extensao, desde a criacao do workspace ate o uso dos comandos mais importantes:
-
-<p align="center">
-  <img src="images/tutorial-gift.gif" alt="Liferay Dev Tools tutorial" width="600" />
-</p>
 
 ## Guia Rapido
 
