@@ -47,7 +47,9 @@ Para usar a extensao, tenha somente estes pontos em mente:
 
 Aprenda o fluxo principal da extensao, desde a criacao do workspace ate o uso dos comandos mais importantes:
 
-[Assistir tutorial](videos/tutorial.mp4)
+<p align="center">
+  <img src="images/tutorial-gift.gif" alt="Liferay Dev Tools tutorial" width="600" />
+</p>
 
 ## Guia Rapido
 
