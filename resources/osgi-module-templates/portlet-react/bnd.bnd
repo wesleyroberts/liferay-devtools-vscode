@@ -1,0 +1,4 @@
+Bundle-Name: __PROJECT_TITLE__ React
+Bundle-SymbolicName: __PACKAGE_NAME__.react.web
+Bundle-Version: 1.0.0
+Web-ContextPath: /__PROJECT_NAME__

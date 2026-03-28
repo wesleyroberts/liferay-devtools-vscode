@@ -483,6 +483,12 @@ var OSGI_MODULE_TEMPLATES = [
     label: "API + Service",
     description: "Modulo OSGi dividido em API e implementacao de servico",
     detail: "Cria submodulos -api e -service para backend modular"
+  },
+  {
+    id: "portlet-react",
+    label: "Portlet React",
+    description: "Portlet OSGi com interface React",
+    detail: "Sample com MVCPortlet, JSP e renderizacao React via Liferay.Loader"
   }
 ];
 function getOsgiModuleTemplate(templateId) {
@@ -574,6 +580,10 @@ function registerCreateModuleCommands(context) {
     {
       command: "liferay.createModule.apiService",
       templateId: "api-service"
+    },
+    {
+      command: "liferay.createModule.portletReact",
+      templateId: "portlet-react"
     }
   ];
   for (const config of commandConfigs) {

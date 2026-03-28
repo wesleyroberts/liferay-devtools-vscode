@@ -40,6 +40,7 @@
     "onCommand:liferay.createModule",
     "onCommand:liferay.createModule.mvcPortlet",
     "onCommand:liferay.createModule.apiService",
+    "onCommand:liferay.createModule.portletReact",
     "onCommand:liferay.createClientExtension.customElement",
     "onCommand:liferay.createClientExtension.customElementReactVite",
     "onCommand:liferay.createClientExtension.customElementSvelte",
@@ -91,6 +92,10 @@
       {
         "command": "liferay.createModule.apiService",
         "title": "Liferay: Create OSGi Module - API + Service"
+      },
+      {
+        "command": "liferay.createModule.portletReact",
+        "title": "Liferay: Create OSGi Module - Portlet React"
       },
       {
         "command": "liferay.createClientExtension.customElement",
@@ -220,6 +225,10 @@
         },
         {
           "command": "liferay.createModule.apiService",
+          "group": "1_create"
+        },
+        {
+          "command": "liferay.createModule.portletReact",
           "group": "1_create"
         },
         {

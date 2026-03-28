@@ -2,7 +2,10 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
-export type OsgiModuleTemplateId = "mvc-portlet" | "api-service";
+export type OsgiModuleTemplateId =
+  | "mvc-portlet"
+  | "api-service"
+  | "portlet-react";
 
 export interface OsgiModuleTemplate {
   id: OsgiModuleTemplateId;
@@ -30,6 +33,12 @@ export const OSGI_MODULE_TEMPLATES: OsgiModuleTemplate[] = [
     label: "API + Service",
     description: "Modulo OSGi dividido em API e implementacao de servico",
     detail: "Cria submodulos -api e -service para backend modular"
+  },
+  {
+    id: "portlet-react",
+    label: "Portlet React",
+    description: "Portlet OSGi com interface React",
+    detail: "Sample com MVCPortlet, JSP e renderizacao React via Liferay.Loader"
   }
 ];
 

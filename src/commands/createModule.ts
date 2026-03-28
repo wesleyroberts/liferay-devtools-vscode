@@ -23,6 +23,10 @@ export function registerCreateModuleCommands(context: vscode.ExtensionContext) {
     {
       command: "liferay.createModule.apiService",
       templateId: "api-service"
+    },
+    {
+      command: "liferay.createModule.portletReact",
+      templateId: "portlet-react"
     }
   ];
 
