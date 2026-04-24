@@ -1108,24 +1108,363 @@ async function openWorkspace(workspaceDir) {
   );
 }
 
-// src/commands/downloadBundle.ts
+// src/commands/deployProject.ts
 var fs8 = __toESM(require("node:fs/promises"));
 var path9 = __toESM(require("node:path"));
 var vscode5 = __toESM(require("vscode"));
-function registerDownloadBundleCommand(context) {
+var CLIENT_EXTENSIONS_DIR = "client-extensions";
+var MODULES_DIR_NAMES = /* @__PURE__ */ new Set(["modules", "modulos"]);
+var IGNORED_DIR_NAMES = /* @__PURE__ */ new Set([
+  ".git",
+  ".gradle",
+  ".idea",
+  ".vscode",
+  "bin",
+  "build",
+  "dist",
+  "node_modules",
+  "out",
+  "target"
+]);
+function registerDeployProjectCommand(context) {
   const disposable = vscode5.commands.registerCommand(
+    "liferay.deployProject",
+    async (resource) => {
+      try {
+        const target = await resolveDeployTarget(resource);
+        if (!target) {
+          return;
+        }
+        let progressValue = 0;
+        const deployTask = `${target.taskPath}:deploy`;
+        const deployLabel = getDeployLabel(target);
+        liferayOutput.show(true);
+        await vscode5.window.withProgress(
+          {
+            location: vscode5.ProgressLocation.Notification,
+            title: `Executando deploy de ${deployLabel}...`,
+            cancellable: false
+          },
+          async (progress) => {
+            progress.report({
+              increment: 5,
+              message: "Validando Java..."
+            });
+            await validateJava();
+            progressValue = 10;
+            progress.report({
+              increment: 5,
+              message: "Iniciando Gradle..."
+            });
+            await runGradleCommand(target.workspaceDir, [deployTask], {
+              onLine: (line) => {
+                const nextMessage = mapGradleLineToDeployMessage(line);
+                const nextIncrement = progressValue < 90 ? 2 : 0;
+                if (nextIncrement > 0) {
+                  progressValue += nextIncrement;
+                }
+                progress.report({
+                  increment: nextIncrement,
+                  message: nextMessage
+                });
+              }
+            });
+            if (progressValue < 100) {
+              progress.report({
+                increment: 100 - progressValue,
+                message: "Deploy concluido."
+              });
+            }
+          }
+        );
+        vscode5.window.showInformationMessage(
+          `Deploy concluido com sucesso para ${deployLabel}.`
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Erro desconhecido";
+        vscode5.window.showErrorMessage(`Falha ao executar deploy: ${message}`);
+      }
+    }
+  );
+  context.subscriptions.push(disposable);
+}
+async function resolveDeployTarget(resource) {
+  if (resource) {
+    const fromResource = await resolveDeployTargetFromResource(resource);
+    if (fromResource) {
+      return fromResource;
+    }
+  }
+  const workspaceFolders = vscode5.workspace.workspaceFolders ?? [];
+  if (workspaceFolders.length === 0) {
+    vscode5.window.showErrorMessage(
+      "Abra um Liferay Workspace antes de executar o deploy."
+    );
+    return void 0;
+  }
+  return pickDeployTargetFromFolders(workspaceFolders);
+}
+async function resolveDeployTargetFromResource(resource) {
+  const workspaceFolder = vscode5.workspace.getWorkspaceFolder(resource);
+  if (!workspaceFolder) {
+    return void 0;
+  }
+  const workspaceDir = workspaceFolder.uri.fsPath;
+  const resourceDir = await toDirectoryPath(resource.fsPath);
+  const workspaceRootType = getWorkspaceRootType(workspaceDir, resourceDir);
+  if (!workspaceRootType) {
+    return void 0;
+  }
+  let currentDir = resourceDir;
+  while (isInsideOrEqual(workspaceDir, currentDir)) {
+    const deployTarget = await buildDeployTarget(workspaceDir, currentDir);
+    if (deployTarget) {
+      return deployTarget;
+    }
+    if (pathEquals(currentDir, workspaceDir)) {
+      break;
+    }
+    currentDir = path9.dirname(currentDir);
+  }
+  const matchingTargets = await findDeployTargets(workspaceDir, resourceDir);
+  if (matchingTargets.length === 1) {
+    return matchingTargets[0];
+  }
+  if (matchingTargets.length > 1) {
+    return pickDeployTargetQuickPick(
+      matchingTargets,
+      `Escolha qual ${workspaceRootType.label} deseja publicar`
+    );
+  }
+  vscode5.window.showWarningMessage(
+    `Nenhum ${workspaceRootType.label} deployavel foi encontrado em ${resourceDir}.`
+  );
+  return void 0;
+}
+async function pickDeployTargetFromFolders(workspaceFolders) {
+  const allTargets = [];
+  for (const workspaceFolder of workspaceFolders) {
+    const workspaceDir = workspaceFolder.uri.fsPath;
+    const rootDirs = [
+      path9.join(workspaceDir, CLIENT_EXTENSIONS_DIR),
+      path9.join(workspaceDir, "modules"),
+      path9.join(workspaceDir, "modulos")
+    ];
+    for (const rootDir of rootDirs) {
+      if (await pathExists(rootDir)) {
+        allTargets.push(...await findDeployTargets(workspaceDir, rootDir));
+      }
+    }
+  }
+  if (allTargets.length === 0) {
+    vscode5.window.showWarningMessage(
+      "Nenhum projeto deployavel foi encontrado em client-extensions ou modules."
+    );
+    return void 0;
+  }
+  if (allTargets.length === 1) {
+    return allTargets[0];
+  }
+  return pickDeployTargetQuickPick(
+    allTargets,
+    "Escolha o projeto que deseja publicar"
+  );
+}
+async function findDeployTargets(workspaceDir, searchDir) {
+  if (!getWorkspaceRootType(workspaceDir, searchDir)) {
+    return [];
+  }
+  const deployTargets = [];
+  await visitDirectories(searchDir, async (dir) => {
+    const deployTarget = await buildDeployTarget(workspaceDir, dir);
+    if (deployTarget) {
+      deployTargets.push(deployTarget);
+      return false;
+    }
+    return true;
+  });
+  return dedupeDeployTargets(deployTargets);
+}
+async function buildDeployTarget(workspaceDir, projectDir) {
+  const relativePath = path9.relative(workspaceDir, projectDir);
+  if (!relativePath || relativePath.startsWith("..")) {
+    return void 0;
+  }
+  const relativeSegments = relativePath.split(path9.sep).filter(Boolean);
+  if (relativeSegments.length < 2) {
+    return void 0;
+  }
+  const rootSegment = relativeSegments[0].toLowerCase();
+  if (rootSegment === CLIENT_EXTENSIONS_DIR) {
+    if (!await pathExists(path9.join(projectDir, "client-extension.yaml"))) {
+      return void 0;
+    }
+    return {
+      workspaceDir,
+      projectDir,
+      taskPath: toGradlePath(relativeSegments),
+      displayName: relativeSegments[relativeSegments.length - 1],
+      kind: "client-extension"
+    };
+  }
+  if (MODULES_DIR_NAMES.has(rootSegment)) {
+    const hasGradleBuild = await pathExists(path9.join(projectDir, "build.gradle")) || await pathExists(path9.join(projectDir, "build.gradle.kts"));
+    if (!hasGradleBuild) {
+      return void 0;
+    }
+    return {
+      workspaceDir,
+      projectDir,
+      taskPath: toGradlePath(relativeSegments),
+      displayName: relativeSegments[relativeSegments.length - 1],
+      kind: "osgi-module"
+    };
+  }
+  return void 0;
+}
+async function pickDeployTargetQuickPick(deployTargets, placeHolder) {
+  const choice = await vscode5.window.showQuickPick(
+    deployTargets.slice().sort((left, right) => left.taskPath.localeCompare(right.taskPath)).map((target) => ({
+      label: target.displayName,
+      description: `${getKindLabel(target.kind)} - ${target.taskPath}`,
+      detail: target.projectDir,
+      target
+    })),
+    {
+      placeHolder
+    }
+  );
+  return choice?.target;
+}
+async function visitDirectories(currentDir, visitor) {
+  const shouldContinue = await visitor(currentDir);
+  if (!shouldContinue) {
+    return;
+  }
+  const entries = await fs8.readdir(currentDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+    if (IGNORED_DIR_NAMES.has(entry.name.toLowerCase())) {
+      continue;
+    }
+    await visitDirectories(path9.join(currentDir, entry.name), visitor);
+  }
+}
+function dedupeDeployTargets(deployTargets) {
+  const seen = /* @__PURE__ */ new Set();
+  const uniqueTargets = [];
+  for (const deployTarget of deployTargets) {
+    const key = normalizePath(deployTarget.projectDir);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    uniqueTargets.push(deployTarget);
+  }
+  return uniqueTargets;
+}
+function getDeployLabel(target) {
+  return `${getKindLabel(target.kind)} ${target.displayName}`;
+}
+function getKindLabel(kind) {
+  return kind === "client-extension" ? "client extension" : "modulo OSGi";
+}
+function getWorkspaceRootType(workspaceDir, candidateDir) {
+  const relativePath = path9.relative(workspaceDir, candidateDir);
+  if (!relativePath || relativePath.startsWith("..")) {
+    return void 0;
+  }
+  const firstSegment = relativePath.split(path9.sep).filter(Boolean)[0];
+  const normalized = firstSegment?.toLowerCase();
+  if (normalized === CLIENT_EXTENSIONS_DIR) {
+    return { label: "client extension" };
+  }
+  if (normalized && MODULES_DIR_NAMES.has(normalized)) {
+    return { label: "modulo OSGi" };
+  }
+  return void 0;
+}
+function mapGradleLineToDeployMessage(line) {
+  const normalized = line.toLowerCase();
+  if (normalized.includes(":clean")) {
+    return "Limpando artefatos anteriores...";
+  }
+  if (normalized.includes(":compilejava")) {
+    return "Compilando codigo Java...";
+  }
+  if (normalized.includes(":jar")) {
+    return "Gerando arquivo JAR...";
+  }
+  if (normalized.includes(":war")) {
+    return "Gerando arquivo WAR...";
+  }
+  if (normalized.includes(":buildclientextension")) {
+    return "Montando client extension...";
+  }
+  if (normalized.includes(":assemble")) {
+    return "Empacotando artefatos...";
+  }
+  if (normalized.includes(":deploy")) {
+    return "Enviando artefato para o bundle...";
+  }
+  if (normalized.includes("build successful")) {
+    return "Build concluido com sucesso.";
+  }
+  if (normalized.includes("build failed")) {
+    return "Build falhou.";
+  }
+  return line.length > 80 ? `${line.slice(0, 77)}...` : line;
+}
+async function toDirectoryPath(targetPath) {
+  try {
+    const stats = await fs8.stat(targetPath);
+    return stats.isDirectory() ? targetPath : path9.dirname(targetPath);
+  } catch {
+    return path9.dirname(targetPath);
+  }
+}
+async function pathExists(targetPath) {
+  try {
+    await fs8.access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function toGradlePath(relativeSegments) {
+  return `:${relativeSegments.join(":")}`;
+}
+function isInsideOrEqual(parentDir, childDir) {
+  const relativePath = path9.relative(parentDir, childDir);
+  return relativePath === "" || !relativePath.startsWith("..") && !path9.isAbsolute(relativePath);
+}
+function pathEquals(left, right) {
+  return normalizePath(left) === normalizePath(right);
+}
+function normalizePath(targetPath) {
+  return path9.normalize(targetPath).toLowerCase();
+}
+
+// src/commands/downloadBundle.ts
+var fs9 = __toESM(require("node:fs/promises"));
+var path10 = __toESM(require("node:path"));
+var vscode6 = __toESM(require("vscode"));
+function registerDownloadBundleCommand(context) {
+  const disposable = vscode6.commands.registerCommand(
     "liferay.downloadBundle",
     async (resource) => {
       try {
-        const workspaceFolder = resource ? vscode5.workspace.getWorkspaceFolder(resource) : vscode5.workspace.workspaceFolders?.[0];
+        const workspaceFolder = resource ? vscode6.workspace.getWorkspaceFolder(resource) : vscode6.workspace.workspaceFolders?.[0];
         if (!workspaceFolder) {
-          vscode5.window.showErrorMessage(
+          vscode6.window.showErrorMessage(
             "Abra um Liferay Workspace antes de baixar o bundle."
           );
           return;
         }
         if (resource && await isNonEmptyBundleDir(resource)) {
-          vscode5.window.showWarningMessage(
+          vscode6.window.showWarningMessage(
             "A opcao de download so pode ser usada quando a pasta bundle/bundles estiver vazia."
           );
           return;
@@ -1133,9 +1472,9 @@ function registerDownloadBundleCommand(context) {
         const workspaceDir = workspaceFolder.uri.fsPath;
         let progressValue = 0;
         liferayOutput.show(true);
-        await vscode5.window.withProgress(
+        await vscode6.window.withProgress(
           {
-            location: vscode5.ProgressLocation.Notification,
+            location: vscode6.ProgressLocation.Notification,
             title: "Baixando bundle do Liferay...",
             cancellable: false
           },
@@ -1171,13 +1510,13 @@ function registerDownloadBundleCommand(context) {
             }
           }
         );
-        await vscode5.commands.executeCommand("liferay.managePortal");
-        vscode5.window.showInformationMessage(
+        await vscode6.commands.executeCommand("liferay.managePortal");
+        vscode6.window.showInformationMessage(
           "Bundle baixado com sucesso. O painel de controle do portal foi aberto."
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro desconhecido";
-        vscode5.window.showErrorMessage(
+        vscode6.window.showErrorMessage(
           `Falha ao baixar o bundle: ${message}`
         );
       }
@@ -1186,11 +1525,11 @@ function registerDownloadBundleCommand(context) {
   context.subscriptions.push(disposable);
 }
 async function isNonEmptyBundleDir(resource) {
-  const folderName = path9.basename(resource.fsPath).toLowerCase();
+  const folderName = path10.basename(resource.fsPath).toLowerCase();
   if (folderName !== "bundle" && folderName !== "bundles") {
     return false;
   }
-  const entries = await fs8.readdir(resource.fsPath, { withFileTypes: true });
+  const entries = await fs9.readdir(resource.fsPath, { withFileTypes: true });
   return entries.length > 0;
 }
 function mapGradleLineToMessage(line) {
@@ -1232,25 +1571,25 @@ function mapGradleLineToMessage(line) {
 }
 
 // src/commands/managePortal.ts
-var vscode6 = __toESM(require("vscode"));
+var vscode7 = __toESM(require("vscode"));
 function registerManagePortalCommands(context, portalRuntime) {
   const panel = new PortalControlPanel(portalRuntime);
   context.subscriptions.push(
     panel,
-    vscode6.commands.registerCommand("liferay.managePortal", async () => {
+    vscode7.commands.registerCommand("liferay.managePortal", async () => {
       const workspaceDir = getCurrentWorkspaceDir();
       if (!workspaceDir) {
-        vscode6.window.showErrorMessage(
+        vscode7.window.showErrorMessage(
           "Abra um Liferay Workspace antes de gerenciar o portal."
         );
         return;
       }
       panel.show(workspaceDir);
     }),
-    vscode6.commands.registerCommand("liferay.startPortal", async () => {
+    vscode7.commands.registerCommand("liferay.startPortal", async () => {
       const workspaceDir = getCurrentWorkspaceDir();
       if (!workspaceDir) {
-        vscode6.window.showErrorMessage(
+        vscode7.window.showErrorMessage(
           "Abra um Liferay Workspace antes de iniciar o portal."
         );
         return;
@@ -1258,14 +1597,14 @@ function registerManagePortalCommands(context, portalRuntime) {
       panel.show(workspaceDir);
       await portalRuntime.start(workspaceDir);
     }),
-    vscode6.commands.registerCommand("liferay.stopPortal", async () => {
+    vscode7.commands.registerCommand("liferay.stopPortal", async () => {
       panel.show();
       await portalRuntime.stop();
     })
   );
 }
 function getCurrentWorkspaceDir() {
-  return vscode6.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  return vscode7.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 var PortalControlPanel = class {
   constructor(portalRuntime) {
@@ -1285,10 +1624,10 @@ var PortalControlPanel = class {
       this.workspaceDir = workspaceDir;
     }
     if (!this.panel) {
-      this.panel = vscode6.window.createWebviewPanel(
+      this.panel = vscode7.window.createWebviewPanel(
         "liferayPortalControl",
         "Liferay Portal Control",
-        vscode6.ViewColumn.Active,
+        vscode7.ViewColumn.Active,
         {
           enableScripts: true,
           retainContextWhenHidden: true
@@ -1306,7 +1645,7 @@ var PortalControlPanel = class {
             }
           } catch (error) {
             const text = error instanceof Error ? error.message : "Erro desconhecido";
-            vscode6.window.showErrorMessage(text);
+            vscode7.window.showErrorMessage(text);
           }
         },
         void 0,
@@ -1316,7 +1655,7 @@ var PortalControlPanel = class {
         this.panel = void 0;
       }, void 0, this.disposables);
     }
-    this.panel.reveal(vscode6.ViewColumn.Active, true);
+    this.panel.reveal(vscode7.ViewColumn.Active, true);
     this.panel.webview.postMessage({
       type: "state",
       payload: this.buildViewState(this.portalRuntime.getState())
@@ -1589,17 +1928,17 @@ function getNonce() {
 }
 
 // src/core/portalRuntime.ts
-var fs9 = __toESM(require("node:fs/promises"));
-var path10 = __toESM(require("node:path"));
+var fs10 = __toESM(require("node:fs/promises"));
+var path11 = __toESM(require("node:path"));
 var import_node_child_process3 = require("node:child_process");
-var vscode7 = __toESM(require("vscode"));
+var vscode8 = __toESM(require("vscode"));
 var PortalRuntime = class {
   constructor() {
     this.state = {
       status: "idle",
       logs: []
     };
-    this.onDidChangeStateEmitter = new vscode7.EventEmitter();
+    this.onDidChangeStateEmitter = new vscode8.EventEmitter();
     this.onDidChangeState = this.onDidChangeStateEmitter.event;
   }
   getState() {
@@ -1753,10 +2092,10 @@ var PortalRuntime = class {
   }
 };
 async function findPortalDir(workspaceDir) {
-  const bundlesDir = path10.join(workspaceDir, "bundles");
+  const bundlesDir = path11.join(workspaceDir, "bundles");
   let entries;
   try {
-    entries = await fs9.readdir(bundlesDir, { withFileTypes: true });
+    entries = await fs10.readdir(bundlesDir, { withFileTypes: true });
   } catch {
     throw new Error("A pasta bundles nao foi encontrada. Execute o download do bundle primeiro.");
   }
@@ -1764,9 +2103,9 @@ async function findPortalDir(workspaceDir) {
     if (!entry.isDirectory()) {
       continue;
     }
-    const portalDir = path10.join(bundlesDir, entry.name);
-    const catalinaBat = path10.join(portalDir, "bin", "catalina.bat");
-    const catalinaSh = path10.join(portalDir, "bin", "catalina.sh");
+    const portalDir = path11.join(bundlesDir, entry.name);
+    const catalinaBat = path11.join(portalDir, "bin", "catalina.bat");
+    const catalinaSh = path11.join(portalDir, "bin", "catalina.sh");
     if (await exists(catalinaBat) || await exists(catalinaSh)) {
       return portalDir;
     }
@@ -1776,7 +2115,7 @@ async function findPortalDir(workspaceDir) {
   );
 }
 function buildPortalCommand(portalDir, action) {
-  const binDir = path10.join(portalDir, "bin");
+  const binDir = path11.join(portalDir, "bin");
   if (process.platform === "win32") {
     return {
       command: "cmd.exe",
@@ -1785,7 +2124,7 @@ function buildPortalCommand(portalDir, action) {
     };
   }
   return {
-    command: path10.join(binDir, "catalina.sh"),
+    command: path11.join(binDir, "catalina.sh"),
     args: [action],
     cwd: binDir
   };
@@ -1821,7 +2160,7 @@ async function stopPortalProcess(pid, portalDir) {
 }
 async function exists(filePath) {
   try {
-    await fs9.access(filePath);
+    await fs10.access(filePath);
     return true;
   } catch {
     return false;
@@ -1834,6 +2173,7 @@ function activate(context) {
   registerCreateWorkspaceCommand(context);
   registerCreateClientExtensionCommands(context);
   registerCreateModuleCommands(context);
+  registerDeployProjectCommand(context);
   registerDownloadBundleCommand(context);
   registerManagePortalCommands(context, portalRuntime);
   context.subscriptions.push(portalRuntime);

@@ -146,6 +146,18 @@ Templates disponíveis no momento:
 
 Os templates ficam empacotados na própria extensão em `resources/client-extension-templates`.
 
+### `Liferay: Deploy Project`
+
+Executa o deploy de uma `client extension` ou de um `módulo OSGi` usando o `Gradle Wrapper` do workspace.
+
+Esse comando:
+
+- detecta automaticamente se o alvo está em `client-extensions` ou `modules`
+- pode ser usado pelo `Command Palette`
+- também pode ser acionado pelo menu contextual das pastas `client-extensions` e `modules`
+- permite escolher o projeto quando houver mais de um candidato
+- executa a task Gradle `deploy` do projeto selecionado
+
 ### `Liferay: Manage Portal`
 
 Abre um painel visual para controlar o portal do bundle baixado.
@@ -163,6 +175,7 @@ Estes são os recursos já disponíveis na extensão neste momento:
 
 - criação de workspace Liferay 7.4
 - download de bundle com `initBundle`
+- deploy de client extensions e módulos OSGi com `Gradle Wrapper`
 - uso de `Gradle Wrapper` sem dependência de Gradle global
 - fluxo sem dependência de Blade CLI
 - criação de client extensions por comando e menu contextual
@@ -246,7 +259,6 @@ Próximas funcionalidades planejadas:
 
 - `Liferay: Create Module`
 - `Liferay: Create Client Extension`
-- `Liferay: Deploy Module`
 - `Liferay: Start Portal`
 - melhorias no painel de runtime do portal
 - melhorias no progresso do download
@@ -405,6 +417,18 @@ Currently available templates:
 
 The templates are bundled directly in the extension under `resources/client-extension-templates`.
 
+### `Liferay: Deploy Project`
+
+Runs deploy for a `client extension` or an `OSGi module` using the workspace `Gradle Wrapper`.
+
+This command:
+
+- automatically detects whether the target is under `client-extensions` or `modules`
+- can be used from the `Command Palette`
+- can also be triggered from the context menu on `client-extensions` and `modules`
+- lets you choose the project when more than one candidate is available
+- runs the selected project's Gradle `deploy` task
+
 ### `Liferay: Manage Portal`
 
 Opens a visual panel to control the downloaded bundle portal.
@@ -422,6 +446,7 @@ These features are already available in the extension right now:
 
 - Liferay 7.4 workspace creation
 - bundle download with `initBundle`
+- deploy for client extensions and OSGi modules with `Gradle Wrapper`
 - `Gradle Wrapper` usage without a global Gradle dependency
 - workflow without Blade CLI dependency
 - client extension creation by command and context menu
@@ -505,7 +530,6 @@ Planned features:
 
 - `Liferay: Create Module`
 - `Liferay: Create Client Extension`
-- `Liferay: Deploy Module`
 - `Liferay: Start Portal`
 - improvements to the portal runtime panel
 - improvements to download progress
@@ -664,6 +688,18 @@ Plantillas disponibles en este momento:
 
 Las plantillas vienen empaquetadas dentro de la propia extensión en `resources/client-extension-templates`.
 
+### `Liferay: Deploy Project`
+
+Ejecuta el deploy de una `client extension` o de un `módulo OSGi` usando el `Gradle Wrapper` del workspace.
+
+Este comando:
+
+- detecta automáticamente si el destino está en `client-extensions` o `modules`
+- puede usarse desde la `Command Palette`
+- también puede activarse desde el menú contextual de `client-extensions` y `modules`
+- permite elegir el proyecto cuando hay más de un candidato
+- ejecuta la tarea Gradle `deploy` del proyecto seleccionado
+
 ### `Liferay: Manage Portal`
 
 Abre un panel visual para controlar el portal del bundle descargado.
@@ -681,6 +717,7 @@ Estas son las funcionalidades ya disponibles en la extensión en este momento:
 
 - creación de workspace Liferay 7.4
 - descarga de bundle con `initBundle`
+- deploy de client extensions y módulos OSGi con `Gradle Wrapper`
 - uso de `Gradle Wrapper` sin dependencia de Gradle global
 - flujo sin dependencia de Blade CLI
 - creación de client extensions por comando y menú contextual
@@ -764,7 +801,6 @@ Próximas funcionalidades planificadas:
 
 - `Liferay: Create Module`
 - `Liferay: Create Client Extension`
-- `Liferay: Deploy Module`
 - `Liferay: Start Portal`
 - mejoras en el panel de runtime del portal
 - mejoras en el progreso de descarga

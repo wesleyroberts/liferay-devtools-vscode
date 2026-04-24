@@ -1,7 +1,7 @@
 {
   "name": "liferay-dev-tools",
   "displayName": "Liferay Dev Tools",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Create and manage Liferay workspaces, client extensions, bundles, and common OSGi modules directly from VS Code.",
   "publisher": "WesleyRoberts",
   "icon": "images/icon.png",
@@ -61,6 +61,7 @@
     "onCommand:liferay.createClientExtension.etcNode",
     "onCommand:liferay.createClientExtension.etcPythonFastAPI",
     "onCommand:liferay.createClientExtension.etcSpringBoot",
+    "onCommand:liferay.deployProject",
     "onCommand:liferay.downloadBundle",
     "onCommand:liferay.managePortal",
     "onCommand:liferay.startPortal",
@@ -76,6 +77,10 @@
       {
         "command": "liferay.downloadBundle",
         "title": "Liferay: Download Bundle"
+      },
+      {
+        "command": "liferay.deployProject",
+        "title": "Liferay: Deploy Project"
       },
       {
         "command": "liferay.createClientExtension",
@@ -220,6 +225,10 @@
       ],
       "liferay.osgiModulesSubmenu": [
         {
+          "command": "liferay.deployProject",
+          "group": "0_deploy"
+        },
+        {
           "command": "liferay.createModule.mvcPortlet",
           "group": "1_create"
         },
@@ -237,6 +246,10 @@
         }
       ],
       "liferay.clientExtensionsSubmenu": [
+        {
+          "command": "liferay.deployProject",
+          "group": "0_deploy"
+        },
         {
           "command": "liferay.createClientExtension.customElement",
           "group": "1_create"
