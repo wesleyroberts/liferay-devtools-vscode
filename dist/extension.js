@@ -736,12 +736,40 @@ var vscode4 = __toESM(require("vscode"));
 
 // src/core/versions.ts
 var COMMUNITY_VERSIONS = [
-  { label: "7.4 GA132", value: "portal-7.4-ga132" },
-  { label: "7.4 GA129", value: "portal-7.4-ga129" }
+  {
+    label: "7.4 GA132",
+    value: "portal-7.4-ga132",
+    dockerImage: {
+      repository: "liferay/portal",
+      tag: "7.4.3.132-ga132"
+    }
+  },
+  {
+    label: "7.4 GA129",
+    value: "portal-7.4-ga129",
+    dockerImage: {
+      repository: "liferay/portal",
+      tag: "7.4.3.129-ga129"
+    }
+  }
 ];
 var DXP_VERSIONS = [
-  { label: "7.4 U102", value: "dxp-7.4-u102" },
-  { label: "7.4 U98", value: "dxp-7.4-u98" }
+  {
+    label: "7.4 U102",
+    value: "dxp-7.4-u102",
+    dockerImage: {
+      repository: "liferay/dxp",
+      tag: "7.4.13-u102"
+    }
+  },
+  {
+    label: "7.4 U98",
+    value: "dxp-7.4-u98",
+    dockerImage: {
+      repository: "liferay/dxp",
+      tag: "7.4.13-u98"
+    }
+  }
 ];
 
 // src/core/workspaceGenerator.ts
@@ -767,7 +795,7 @@ async function copyDir(src, dest) {
 
 // src/core/workspaceGenerator.ts
 async function generateWorkspace(params) {
-  const { context, workspaceDir, workspaceName, productVersion } = params;
+  const { context, workspaceDir, workspaceName, productVersion, dockerImage } = params;
   const templateDir = path6.join(
     context.extensionPath,
     "resources",
@@ -840,21 +868,174 @@ node_modules/
     gitignore,
     "utf8"
   );
-  await createWorkspaceDirectories(workspaceDir);
+  await createWorkspaceDirectories(workspaceDir, dockerImage);
 }
-async function createWorkspaceDirectories(workspaceDir) {
+async function createWorkspaceDirectories(workspaceDir, dockerImage) {
   const directories = [
     "bundles",
     "modules",
     "configs",
     "client-extensions",
-    "themes"
+    "themes",
+    "docker"
   ];
   for (const dir of directories) {
     await fs6.mkdir(path6.join(workspaceDir, dir), { recursive: true });
   }
-  const configsDir = path6.join(workspaceDir, "configs", "local");
-  await fs6.mkdir(configsDir, { recursive: true });
+  await createConfigDirectories(workspaceDir);
+  await createDockerStructure(workspaceDir, dockerImage);
+}
+async function createConfigDirectories(workspaceDir) {
+  const configDirectories = [
+    "common",
+    "dev",
+    "docker",
+    "local",
+    "prod",
+    "uat"
+  ];
+  for (const directory of configDirectories) {
+    const configDir = path6.join(workspaceDir, "configs", directory);
+    await fs6.mkdir(configDir, { recursive: true });
+    await fs6.writeFile(
+      path6.join(configDir, "portal-ext.properties"),
+      buildPortalExtProperties(directory),
+      "utf8"
+    );
+  }
+}
+function buildPortalExtProperties(directory) {
+  if (directory !== "docker") {
+    return "";
+  }
+  return `jdbc.default.driverClassName=com.mysql.cj.jdbc.Driver
+jdbc.default.url=jdbc:mysql://mysql:3306/lportal?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+jdbc.default.username=liferay
+jdbc.default.password=liferay
+`;
+}
+async function createDockerStructure(workspaceDir, dockerImage) {
+  const dockerDir = path6.join(workspaceDir, "docker");
+  const nginxDir = path6.join(dockerDir, "nginx");
+  await fs6.mkdir(nginxDir, { recursive: true });
+  await fs6.writeFile(
+    path6.join(dockerDir, "docker-compose.yaml"),
+    buildDockerCompose(dockerImage),
+    "utf8"
+  );
+  await fs6.writeFile(
+    path6.join(nginxDir, "default.conf"),
+    buildNginxConfig(),
+    "utf8"
+  );
+}
+function buildDockerCompose(dockerImage) {
+  return `services:
+  liferay:
+    image: ${dockerImage.repository}:${dockerImage.tag}-slim
+    depends_on:
+      mysql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+    environment:
+      LIFERAY_NETWORK_HOST_ADDRESSES: http://elasticsearch:9200
+      LIFERAY_JVM_OPTS: -Xms2g -Xmx2g
+    ports:
+      - "8080:8080"
+      - "11311:11311"
+    volumes:
+      - ../configs/docker/portal-ext.properties:/mnt/liferay/files/portal-ext.properties:ro
+      - ../bundles/deploy:/mnt/liferay/deploy
+      - liferay_data:/opt/liferay/data
+    networks:
+      - liferay
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 240s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.28
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+      xpack.security.enabled: "false"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - liferay
+
+  mysql:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: lportal
+      MYSQL_USER: liferay
+      MYSQL_PASSWORD: liferay
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - liferay
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      liferay:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - liferay
+
+volumes:
+  liferay_data:
+  elasticsearch_data:
+  mysql_data:
+
+networks:
+  liferay:
+    driver: bridge
+`;
+}
+function buildNginxConfig() {
+  return `server {
+    listen 80;
+    server_name _;
+    client_max_body_size 200m;
+
+    location / {
+        proxy_pass http://liferay:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}
+`;
 }
 
 // src/core/gradleRunner.ts
@@ -998,8 +1179,8 @@ function registerCreateWorkspaceCommand(context) {
         if (!edition) {
           return;
         }
-        const productVersion = await pickProductVersion(edition);
-        if (!productVersion) {
+        const productVersionOption = await pickProductVersion(edition);
+        if (!productVersionOption) {
           return;
         }
         const workspaceName = await vscode4.window.showInputBox({
@@ -1040,7 +1221,8 @@ function registerCreateWorkspaceCommand(context) {
               context,
               workspaceDir,
               workspaceName,
-              productVersion
+              productVersion: productVersionOption.value,
+              dockerImage: productVersionOption.dockerImage
             });
             await validateJava();
             await runGradleCommand(workspaceDir, ["--version"]);
@@ -1091,13 +1273,20 @@ async function pickProductVersion(edition) {
     options.map((option) => ({
       label: option.label,
       description: option.value,
-      value: option.value
+      value: option.value,
+      dockerImage: option.dockerImage
     })),
     {
       placeHolder: "Escolha a vers\xE3o do produto"
     }
   );
-  return choice?.value;
+  if (!choice) {
+    return void 0;
+  }
+  return {
+    value: choice.value,
+    dockerImage: choice.dockerImage
+  };
 }
 async function openWorkspace(workspaceDir) {
   const workspaceUri = vscode4.Uri.file(workspaceDir);

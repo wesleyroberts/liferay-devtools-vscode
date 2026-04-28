@@ -2,6 +2,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import {
   COMMUNITY_VERSIONS,
+  DockerImageOption,
   DXP_VERSIONS,
   LiferayEdition
 } from "../core/versions";
@@ -21,8 +22,8 @@ export function registerCreateWorkspaceCommand(
           return;
         }
 
-        const productVersion = await pickProductVersion(edition);
-        if (!productVersion) {
+        const productVersionOption = await pickProductVersion(edition);
+        if (!productVersionOption) {
           return;
         }
 
@@ -71,7 +72,8 @@ export function registerCreateWorkspaceCommand(
               context,
               workspaceDir,
               workspaceName,
-              productVersion
+              productVersion: productVersionOption.value,
+              dockerImage: productVersionOption.dockerImage
             });
 
             await validateJava();
@@ -130,21 +132,35 @@ async function pickEdition(): Promise<LiferayEdition | undefined> {
 
 async function pickProductVersion(
   edition: LiferayEdition
-): Promise<string | undefined> {
+): Promise<
+  | {
+      value: string;
+      dockerImage: DockerImageOption;
+    }
+  | undefined
+> {
   const options = edition === "dxp" ? DXP_VERSIONS : COMMUNITY_VERSIONS;
 
   const choice = await vscode.window.showQuickPick(
     options.map((option) => ({
       label: option.label,
       description: option.value,
-      value: option.value
+      value: option.value,
+      dockerImage: option.dockerImage
     })),
     {
       placeHolder: "Escolha a versão do produto"
     }
   );
 
-  return choice?.value;
+  if (!choice) {
+    return undefined;
+  }
+
+  return {
+    value: choice.value,
+    dockerImage: choice.dockerImage
+  };
 }
 
 async function openWorkspace(workspaceDir: string) {

@@ -1,7 +1,7 @@
 {
   "name": "liferay-dev-tools",
   "displayName": "Liferay Dev Tools",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Create and manage Liferay workspaces, client extensions, bundles, and common OSGi modules directly from VS Code.",
   "publisher": "WesleyRoberts",
   "icon": "images/icon.png",
