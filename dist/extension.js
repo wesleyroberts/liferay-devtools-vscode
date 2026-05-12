@@ -471,6 +471,9 @@ var vscode2 = __toESM(require("vscode"));
 // src/core/osgiModuleGenerator.ts
 var fs3 = __toESM(require("node:fs/promises"));
 var path3 = __toESM(require("node:path"));
+var DEFAULT_RELEASE_NAME = "release.dxp.api";
+var PORTAL_RELEASE_NAME = "release.portal.api";
+var RELEASE_NAME_TOKEN = "__RELEASE_NAME__";
 var OSGI_MODULE_TEMPLATES = [
   {
     id: "mvc-portlet",
@@ -512,7 +515,8 @@ async function generateOsgiModule(params) {
     projectDir,
     "Ja existe um modulo OSGi com esse nome"
   );
-  const replacements = buildTemplateReplacements2(projectName);
+  const releaseName = await resolveReleaseName(modulesDir);
+  const replacements = buildTemplateReplacements2(projectName, releaseName);
   await copyTemplateDir2(templateDir, projectDir, replacements);
 }
 async function assertPathExists2(filePath, message) {
@@ -552,7 +556,7 @@ function applyReplacements2(content, replacements) {
     return result.split(token).join(value);
   }, content);
 }
-function buildTemplateReplacements2(projectName) {
+function buildTemplateReplacements2(projectName, releaseName) {
   const projectTitle = projectName.split("-").filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
   const packageSuffix = projectName.replace(/-/g, ".").toLowerCase();
   const packageName = `com.acme.${packageSuffix}`;
@@ -563,8 +567,33 @@ function buildTemplateReplacements2(projectName) {
     "__PROJECT_TITLE__": projectTitle,
     "__PACKAGE_NAME__": packageName,
     "__PACKAGE_PATH__": packagePath,
-    "__CLASS_PREFIX__": classPrefix
+    "__CLASS_PREFIX__": classPrefix,
+    [RELEASE_NAME_TOKEN]: releaseName
   };
+}
+async function resolveReleaseName(modulesDir) {
+  const workspaceDir = path3.dirname(modulesDir);
+  const gradlePropertiesPath = path3.join(workspaceDir, "gradle.properties");
+  try {
+    const gradleProperties = await fs3.readFile(gradlePropertiesPath, "utf8");
+    const workspaceProduct = readGradleProperty(
+      gradleProperties,
+      "liferay.workspace.product"
+    );
+    if (workspaceProduct?.toLowerCase().startsWith("portal-")) {
+      return PORTAL_RELEASE_NAME;
+    }
+  } catch {
+    return DEFAULT_RELEASE_NAME;
+  }
+  return DEFAULT_RELEASE_NAME;
+}
+function readGradleProperty(content, propertyName) {
+  const escapedPropertyName = propertyName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = content.match(
+    new RegExp(`^\\s*${escapedPropertyName}\\s*[:=]\\s*(.+?)\\s*$`, "m")
+  );
+  return match?.[1].trim();
 }
 
 // src/commands/createModule.ts

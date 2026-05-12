@@ -1,4 +1,4 @@
 dependencies {
-    compileOnly group: "com.liferay.portal", name: "release.dxp.api"
+    compileOnly group: "com.liferay.portal", name: "__RELEASE_NAME__"
     compileOnly project(":__PROJECT_NAME__-api")
 }

@@ -21,6 +21,10 @@ export interface GenerateOsgiModuleParams {
   templateId: OsgiModuleTemplateId;
 }
 
+const DEFAULT_RELEASE_NAME = "release.dxp.api";
+const PORTAL_RELEASE_NAME = "release.portal.api";
+const RELEASE_NAME_TOKEN = "__RELEASE_NAME__";
+
 export const OSGI_MODULE_TEMPLATES: OsgiModuleTemplate[] = [
   {
     id: "mvc-portlet",
@@ -72,7 +76,8 @@ export async function generateOsgiModule(
     "Ja existe um modulo OSGi com esse nome"
   );
 
-  const replacements = buildTemplateReplacements(projectName);
+  const releaseName = await resolveReleaseName(modulesDir);
+  const replacements = buildTemplateReplacements(projectName, releaseName);
 
   await copyTemplateDir(templateDir, projectDir, replacements);
 }
@@ -131,7 +136,8 @@ function applyReplacements(
 }
 
 function buildTemplateReplacements(
-  projectName: string
+  projectName: string,
+  releaseName: string
 ): Record<string, string> {
   const projectTitle = projectName
     .split("-")
@@ -153,6 +159,40 @@ function buildTemplateReplacements(
     "__PROJECT_TITLE__": projectTitle,
     "__PACKAGE_NAME__": packageName,
     "__PACKAGE_PATH__": packagePath,
-    "__CLASS_PREFIX__": classPrefix
+    "__CLASS_PREFIX__": classPrefix,
+    [RELEASE_NAME_TOKEN]: releaseName
   };
+}
+
+async function resolveReleaseName(modulesDir: string): Promise<string> {
+  const workspaceDir = path.dirname(modulesDir);
+  const gradlePropertiesPath = path.join(workspaceDir, "gradle.properties");
+
+  try {
+    const gradleProperties = await fs.readFile(gradlePropertiesPath, "utf8");
+    const workspaceProduct = readGradleProperty(
+      gradleProperties,
+      "liferay.workspace.product"
+    );
+
+    if (workspaceProduct?.toLowerCase().startsWith("portal-")) {
+      return PORTAL_RELEASE_NAME;
+    }
+  } catch {
+    return DEFAULT_RELEASE_NAME;
+  }
+
+  return DEFAULT_RELEASE_NAME;
+}
+
+function readGradleProperty(
+  content: string,
+  propertyName: string
+): string | undefined {
+  const escapedPropertyName = propertyName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = content.match(
+    new RegExp(`^\\s*${escapedPropertyName}\\s*[:=]\\s*(.+?)\\s*$`, "m")
+  );
+
+  return match?.[1].trim();
 }
